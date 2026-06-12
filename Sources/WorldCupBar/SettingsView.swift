@@ -17,11 +17,9 @@ struct SettingsView: View {
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
             .listStyle(.sidebar)
         } detail: {
-            ZStack {
-                VisualEffectBackground().ignoresSafeArea()
-                detailContent
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            detailContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .windowBackgroundColor))
         }
         .frame(minWidth: 680, minHeight: 480)
     }
@@ -311,10 +309,10 @@ private struct SettingsCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.primary.opacity(0.04))
+                    .fill(Color(nsColor: .controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
                     )
             )
         }

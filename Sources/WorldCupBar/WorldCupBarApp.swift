@@ -35,6 +35,7 @@ struct WorldCupBarApp: App {
         MenuBarExtra {
             MenuBarDropdownView(viewModel: viewModel)
                 .frame(width: 360)
+                .tint(.lavender)
                 .task {
                     await NotificationScheduler.shared.requestPermission()
                     await viewModel.start()
@@ -48,6 +49,7 @@ struct WorldCupBarApp: App {
 
         Window("World Cup Bar Settings", id: "settings") {
             SettingsView(viewModel: viewModel, updaterViewModel: updaterViewModel)
+                .tint(.lavender)
         }
         .defaultSize(width: 760, height: 680)
     }
