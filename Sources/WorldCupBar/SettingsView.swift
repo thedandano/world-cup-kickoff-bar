@@ -10,6 +10,7 @@ struct SettingsView: View {
                 header
                 displaySection
                 followedCountriesSection
+                analyticsSection
                 dataSection
             }
             .padding(.horizontal, 34)
@@ -25,7 +26,7 @@ struct SettingsView: View {
             Text("World Cup Bar Settings")
                 .font(.system(size: 22, weight: .semibold))
 
-            Text("Choose how the menu bar reads and which countries affect the live score priority.")
+            Text("Set what appears in the menu bar.")
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
         }
@@ -34,13 +35,13 @@ struct SettingsView: View {
     private var displaySection: some View {
         SettingsSection(
             title: "Display",
-            subtitle: "Controls the compact menu bar label and match rows."
+            subtitle: "Choose the compact match label."
         ) {
             HStack(alignment: .center, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Menu bar display")
                         .font(.system(size: 14, weight: .medium))
-                    Text("Use country codes for clarity or flags for a tighter glance.")
+                    Text("Show team codes or flags.")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -63,26 +64,33 @@ struct SettingsView: View {
     private var followedCountriesSection: some View {
         SettingsSection(
             title: "Followed Countries",
-            subtitle: "Live matches for these countries appear first in the menu bar."
+            subtitle: "Prioritize these teams when they are live."
         ) {
             VStack(spacing: 0) {
-                ForEach(viewModel.availableCountries) { country in
-                    CountrySettingsRow(
-                        country: country,
-                        isFollowed: Binding(
-                            get: { viewModel.followedCountryCodes.contains(country.code) },
-                            set: { viewModel.setFollowed(country, isFollowed: $0) }
+                if viewModel.availableCountries.isEmpty {
+                    Text("Team list will appear after the first live refresh.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .padding(16)
+                } else {
+                    ForEach(viewModel.availableCountries) { country in
+                        CountrySettingsRow(
+                            country: country,
+                            isFollowed: Binding(
+                                get: { viewModel.followedCountryCodes.contains(country.code) },
+                                set: { viewModel.setFollowed(country, isFollowed: $0) }
+                            )
                         )
-                    )
 
-                    if country.id != viewModel.availableCountries.last?.id {
-                        Divider()
-                            .padding(.leading, 46)
+                        if country.id != viewModel.availableCountries.last?.id {
+                            Divider()
+                                .padding(.leading, 46)
+                        }
                     }
                 }
             }
 
-            Text("The menu bar dropdown shows followed countries as read-only chips. Editing stays here.")
+            Text("Live followed matches appear before upcoming matches.")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 16)
@@ -90,16 +98,40 @@ struct SettingsView: View {
         }
     }
 
-    private var dataSection: some View {
+    private var analyticsSection: some View {
         SettingsSection(
-            title: "Data",
-            subtitle: "This prototype uses mock match data while the provider boundary stays modular."
+            title: "Analytics",
+            subtitle: "Control product analytics."
         ) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Mock data adapter")
+                    Text("Usage analytics")
                         .font(.system(size: 14, weight: .medium))
-                    Text("No user API key is needed in this version.")
+                    Text("Turn off product analytics any time.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Toggle("Usage analytics", isOn: $viewModel.analyticsEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            .padding(16)
+        }
+    }
+
+    private var dataSection: some View {
+        SettingsSection(
+            title: "Data",
+            subtitle: "Refresh the current match list."
+        ) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Match data")
+                        .font(.system(size: 14, weight: .medium))
+                    Text(viewModel.footerStatusText)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }

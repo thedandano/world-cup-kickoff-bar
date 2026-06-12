@@ -1,3 +1,2 @@
-public protocol MatchDataProvider: Sendable {
-    func fetchMatches() async throws -> [WorldCupMatch]
-}
+@available(*, unavailable, renamed: "WorldCupDataProviding")
+public typealias MatchDataProvider = WorldCupDataProviding

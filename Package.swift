@@ -17,15 +17,25 @@ let package = Package(
             targets: ["WorldCupBar"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/TelemetryDeck/SwiftSDK.git", exact: "2.14.0")
+    ],
     targets: [
         .target(name: "WorldCupBarCore"),
         .executableTarget(
             name: "WorldCupBar",
-            dependencies: ["WorldCupBarCore"]
+            dependencies: [
+                "WorldCupBarCore",
+                .product(name: "TelemetryDeck", package: "SwiftSDK")
+            ]
         ),
         .testTarget(
             name: "WorldCupBarCoreTests",
             dependencies: ["WorldCupBarCore"]
+        ),
+        .testTarget(
+            name: "WorldCupBarTests",
+            dependencies: ["WorldCupBar", "WorldCupBarCore"]
         )
     ]
 )

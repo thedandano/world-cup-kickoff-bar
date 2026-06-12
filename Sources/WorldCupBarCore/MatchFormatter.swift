@@ -30,10 +30,14 @@ public struct MatchFormatter: Sendable {
     public func matchupTitle(for match: WorldCupMatch, displayMode: DisplayMode) -> String {
         switch displayMode {
         case .abbreviations:
-            return "\(match.home.code)-\(match.away.code)"
+            return "\(match.home.code) v \(match.away.code)"
         case .flags:
-            return "\(match.home.flagEmoji) \(match.away.flagEmoji)"
+            return "\(flagOrCode(for: match.home)) v \(flagOrCode(for: match.away))"
         }
+    }
+
+    public func dropdownMatchupTitle(for match: WorldCupMatch) -> String {
+        "\(flagAndCode(for: match.home)) - \(flagAndCode(for: match.away))"
     }
 
     public func localTime(for date: Date) -> String {
@@ -64,7 +68,16 @@ public struct MatchFormatter: Sendable {
         case .abbreviations:
             return "\(match.home.code) \(score.home)-\(score.away) \(match.away.code)"
         case .flags:
-            return "\(match.home.flagEmoji) \(score.home)-\(score.away) \(match.away.flagEmoji)"
+            return "\(flagOrCode(for: match.home)) \(score.home)-\(score.away) \(flagOrCode(for: match.away))"
         }
+    }
+
+    private func flagOrCode(for country: Country) -> String {
+        country.hasRenderableFlag ? country.flagEmoji : country.code
+    }
+
+
+    private func flagAndCode(for country: Country) -> String {
+        country.hasRenderableFlag ? "\(country.flagEmoji) \(country.code)" : country.code
     }
 }

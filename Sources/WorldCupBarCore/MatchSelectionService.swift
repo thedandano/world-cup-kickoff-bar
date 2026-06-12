@@ -51,6 +51,22 @@ public struct MatchSelectionService: Sendable {
         }
     }
 
+    public func isPostTournamentState(matches: [WorldCupMatch], now: Date) -> Bool {
+        guard !matches.isEmpty else {
+            return false
+        }
+
+        let hasFutureOrLiveMatch = matches.contains { match in
+            match.status.isLive || (match.status == .scheduled && match.kickoffDate >= now)
+        }
+
+        guard !hasFutureOrLiveMatch else {
+            return false
+        }
+
+        return matches.contains { $0.status == .finished }
+    }
+
     private func liveSortKey(for match: WorldCupMatch, now: Date) -> Int {
         guard case .live(let minute) = match.status else {
             return Int.max

@@ -60,7 +60,7 @@ import Testing
     ).menuBarTitle(for: state, displayMode: .abbreviations)
 
     #expect(state == .upcoming(upcomingMatch))
-    #expect(title.hasPrefix("CAN-BRA 1:00"))
+    #expect(title.hasPrefix("CAN v BRA 1:00"))
     #expect(title.hasSuffix("PM"))
 }
 
@@ -178,4 +178,19 @@ import Testing
     )
 
     #expect(MatchFormatter().statusLine(for: liveMatch) == "Live 67'")
+}
+
+@Test func postTournamentStateRequiresFinishedTournamentWithoutFutureMatches() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let finishedMatch = WorldCupMatch(
+        id: "final",
+        home: .argentina,
+        away: .france,
+        kickoffDate: now.addingTimeInterval(-86_400),
+        status: .finished,
+        score: MatchScore(home: 3, away: 2),
+        venue: "MetLife Stadium"
+    )
+
+    #expect(MatchSelectionService().isPostTournamentState(matches: [finishedMatch], now: now))
 }

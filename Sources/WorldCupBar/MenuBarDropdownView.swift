@@ -10,8 +10,15 @@ struct MenuBarDropdownView: View {
         VStack(alignment: .leading, spacing: 14) {
             toolbarSection
             highlightedMatchSection
-            searchField
-            followedCountriesSection
+
+            if viewModel.contentState != .postTournament {
+                searchField
+            }
+
+            if !viewModel.availableCountries.isEmpty || !viewModel.followedCountries.isEmpty {
+                followedCountriesSection
+            }
+
             upcomingMatchesSection
             footerSection
         }
@@ -28,10 +35,18 @@ struct MenuBarDropdownView: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
                     .imageScale(.medium)
+                    .rotationEffect(viewModel.isRefreshing ? .degrees(360) : .degrees(0))
+                    .animation(
+                        viewModel.isRefreshing
+                            ? .linear(duration: 1).repeatForever(autoreverses: false)
+                            : .default,
+                        value: viewModel.isRefreshing
+                    )
             }
             .buttonStyle(.borderless)
-            .help("Refresh mock data")
-            .accessibilityLabel("Refresh mock data")
+            .help("Refresh live data")
+            .accessibilityLabel("Refresh live data")
+            .disabled(viewModel.isRefreshing)
 
             Spacer()
 
@@ -62,15 +77,9 @@ struct MenuBarDropdownView: View {
                 }
             }
 
-            if let match = viewModel.highlightedMatch {
-                Text(match.venue)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("No matches available in mock data.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
+            Text(highlightSubtitle)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
         }
         .padding(12)
         .background(
@@ -87,10 +96,10 @@ struct MenuBarDropdownView: View {
 
     private var followedCountriesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Followed countries")
+            SectionHeader(title: "Following")
 
             if viewModel.followedCountries.isEmpty {
-                Text("No followed countries. Add them in Settings.")
+                Text(viewModel.availableCountries.isEmpty ? "Team list is loading." : "Not following anyone. Add teams in Settings.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             } else {
@@ -108,7 +117,7 @@ struct MenuBarDropdownView: View {
             SectionHeader(title: "Upcoming")
 
             if viewModel.upcomingMatches.isEmpty {
-                Text("No upcoming matches match this search.")
+                Text(upcomingEmptyStateText)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -116,7 +125,11 @@ struct MenuBarDropdownView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(viewModel.upcomingMatches.prefix(5)) { match in
-                        MatchRow(match: match, title: viewModel.matchupTitle(for: match), time: viewModel.localTime(for: match.kickoffDate))
+                        MatchRow(
+                            match: match,
+                            title: viewModel.dropdownMatchupTitle(for: match),
+                            time: viewModel.localTime(for: match.kickoffDate)
+                        )
 
                         if match.id != viewModel.upcomingMatches.prefix(5).last?.id {
                             Divider()
@@ -131,7 +144,7 @@ struct MenuBarDropdownView: View {
         VStack(spacing: 8) {
             Divider()
 
-            Text(mockStatusText)
+            Text(viewModel.footerStatusText)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -139,26 +152,51 @@ struct MenuBarDropdownView: View {
     }
 
     private var highlightTitle: String {
-        switch viewModel.displayState {
-        case .live(let match):
-            return liveScoreTitle(for: match)
-        case .upcoming(let match):
-            return viewModel.matchupTitle(for: match)
-        case .empty:
-            return "World Cup"
+        switch viewModel.contentState {
+        case .loading:
+            return "Loading World Cup"
+        case .unavailable:
+            return "Live data unavailable"
+        case .postTournament:
+            return "See you in 2030!"
+        case .content(let state):
+            switch state {
+            case .live(let match):
+                return liveScoreTitle(for: match)
+            case .upcoming(let match):
+                return viewModel.dropdownMatchupTitle(for: match)
+            case .empty:
+                return "World Cup"
+            }
         }
     }
 
-    private var mockStatusText: String {
-        if let refreshErrorMessage = viewModel.refreshErrorMessage {
-            return refreshErrorMessage
+    private var highlightSubtitle: String {
+        if let match = viewModel.highlightedMatch {
+            return match.venue
         }
 
-        guard let lastUpdated = viewModel.lastUpdated else {
-            return "Mock data adapter"
+        switch viewModel.contentState {
+        case .loading:
+            return "Loading the latest World Cup matches."
+        case .unavailable:
+            return "Live match data is unavailable right now."
+        case .postTournament:
+            return "The 2026 tournament is complete. The app will wait for the next World Cup."
+        case .content:
+            return "No tracked match is available right now."
         }
+    }
 
-        return "Mock data, updated \(viewModel.localTime(for: lastUpdated))"
+    private var upcomingEmptyStateText: String {
+        switch viewModel.contentState {
+        case .postTournament:
+            return "No more fixtures remain in the 2026 tournament."
+        case .unavailable:
+            return "Upcoming matches will appear once live data returns."
+        default:
+            return "No upcoming matches match this search."
+        }
     }
 
     private func liveScoreTitle(for match: WorldCupMatch) -> String {
@@ -166,7 +204,12 @@ struct MenuBarDropdownView: View {
             return "\(viewModel.matchupTitle(for: match)) Live"
         }
 
-        return "\(match.home.code) \(score.home)-\(score.away) \(match.away.code)"
+        return switch viewModel.displayMode {
+        case .abbreviations:
+            "\(match.home.code) \(score.home)-\(score.away) \(match.away.code)"
+        case .flags:
+            "\(match.home.hasRenderableFlag ? match.home.flagEmoji : match.home.code) \(score.home)-\(score.away) \(match.away.hasRenderableFlag ? match.away.flagEmoji : match.away.code)"
+        }
     }
 }
 
@@ -203,7 +246,9 @@ private struct CountryChip: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Text(country.flagEmoji)
+            if country.hasRenderableFlag {
+                Text(country.flagEmoji)
+            }
             Text(country.code)
                 .fontWeight(.semibold)
         }
@@ -223,27 +268,26 @@ private struct MatchRow: View {
     let time: String
 
     var body: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(Color.accentColor.opacity(0.75))
-                .frame(width: 6, height: 6)
-
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 13, weight: .medium))
-                    .monospacedDigit()
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
                 Text(match.venue)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
 
-            Spacer()
+            Spacer(minLength: 12)
 
             Text(time)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 12, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 10)
     }
 }
