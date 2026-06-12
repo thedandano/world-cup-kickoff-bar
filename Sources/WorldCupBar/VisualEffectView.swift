@@ -47,3 +47,23 @@ struct VisualEffectBackground: NSViewRepresentable {
             : NSColor.white.withAlphaComponent(0.40).cgColor
     }
 }
+
+// Makes the hosting NSWindow transparent so a vibrancy view can blend
+// through to the desktop. Placed as a background() on the settings root view.
+struct SettingsWindowBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let effectView = NSVisualEffectView()
+        effectView.material = .sidebar
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+        return effectView
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+            window.isOpaque = false
+            window.backgroundColor = .clear
+        }
+    }
+}

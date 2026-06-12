@@ -38,12 +38,14 @@ struct WorldCupBarApp: App {
                 .tint(WCBColor.accent)
                 .task {
                     await NotificationScheduler.shared.requestPermission()
-                    await viewModel.start()
                 }
         } label: {
             Text(viewModel.menuBarTitle)
                 .font(.system(size: 13, weight: .semibold, design: .default))
                 .monospacedDigit()
+                .task {
+                    await viewModel.start()
+                }
         }
         .menuBarExtraStyle(.window)
 

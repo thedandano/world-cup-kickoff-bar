@@ -23,6 +23,7 @@ struct SettingsView: View {
         }
         .tint(WCBColor.accent)
         .frame(minWidth: 680, minHeight: 480)
+        .background(SettingsWindowBackground().ignoresSafeArea())
     }
 
     @ViewBuilder
@@ -86,6 +87,7 @@ private struct DisplayPanel: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
+                    .tint(WCBColor.accent)
                     .frame(width: 250)
                     .help("Controls whether compact match labels use team codes or flags.")
                 }
@@ -193,6 +195,7 @@ private struct NotificationsPanel: View {
                         Text("60 min").tag(60)
                     }
                     .labelsHidden()
+                    .tint(WCBColor.accent)
                     .frame(width: 120)
                 }
                 .padding(WCBSpacing.md)
@@ -219,6 +222,7 @@ private struct AnalyticsPanel: View {
                     Toggle("Usage analytics", isOn: $viewModel.analyticsEnabled)
                         .labelsHidden()
                         .toggleStyle(.switch)
+                        .tint(WCBColor.accent)
                 }
                 .padding(WCBSpacing.md)
             }
@@ -310,10 +314,10 @@ private struct SettingsCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: WCBRadius.md)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color.primary.opacity(0.04))
                     .overlay(
                         RoundedRectangle(cornerRadius: WCBRadius.md)
-                            .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
                     )
             )
         }
@@ -343,6 +347,7 @@ private struct CountrySettingsRow: View {
             Toggle(country.name, isOn: $isFollowed)
                 .labelsHidden()
                 .toggleStyle(.switch)
+                .tint(WCBColor.accent)
         }
         .padding(.horizontal, WCBSpacing.md)
         .frame(minHeight: 48)
