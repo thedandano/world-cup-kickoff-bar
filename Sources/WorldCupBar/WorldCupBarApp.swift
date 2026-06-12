@@ -1,11 +1,21 @@
+import Sparkle
 import SwiftUI
 import WorldCupBarCore
 
 @main
 struct WorldCupBarApp: App {
     @StateObject private var viewModel: WorldCupBarViewModel
+    @StateObject private var updaterViewModel: UpdaterViewModel
+    private let updaterController: SPUStandardUpdaterController
 
     init() {
+        let controller = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
+        updaterController = controller
+        _updaterViewModel = StateObject(wrappedValue: UpdaterViewModel(updater: controller.updater))
         let monitoring = WorldCupMonitoringService(configuration: .fromEnvironment())
         let repository = WorldCupRepository(
             client: WorldCup26APIClient(),
@@ -37,7 +47,7 @@ struct WorldCupBarApp: App {
         .menuBarExtraStyle(.window)
 
         Window("World Cup Bar Settings", id: "settings") {
-            SettingsView(viewModel: viewModel)
+            SettingsView(viewModel: viewModel, updaterViewModel: updaterViewModel)
         }
         .defaultSize(width: 760, height: 680)
     }

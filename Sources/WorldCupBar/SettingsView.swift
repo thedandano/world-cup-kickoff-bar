@@ -3,6 +3,7 @@ import WorldCupBarCore
 
 struct SettingsView: View {
     @ObservedObject var viewModel: WorldCupBarViewModel
+    @ObservedObject var updaterViewModel: UpdaterViewModel
     @State private var countrySearch = ""
 
     var body: some View {
@@ -20,7 +21,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 720, minHeight: 620)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VisualEffectBackground().ignoresSafeArea())
     }
 
     private var header: some View {
@@ -190,7 +191,7 @@ struct SettingsView: View {
     private var dataSection: some View {
         SettingsSection(
             title: "Data",
-            subtitle: "Refresh the current match list."
+            subtitle: "Refresh match data or check for app updates."
         ) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -210,6 +211,27 @@ struct SettingsView: View {
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
+            }
+            .padding(16)
+
+            Divider()
+                .padding(.leading, 16)
+
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("App updates")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("Check for a new version of World Cup Bar.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button("Check for Updates") {
+                    updaterViewModel.checkForUpdates()
+                }
+                .disabled(!updaterViewModel.canCheckForUpdates)
             }
             .padding(16)
         }
@@ -237,8 +259,12 @@ private struct SettingsSection<Content: View>: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.primary.opacity(0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                    )
             )
         }
     }

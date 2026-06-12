@@ -23,7 +23,7 @@ struct MenuBarDropdownView: View {
             footerSection
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VisualEffectBackground().ignoresSafeArea())
     }
 
     private var toolbarSection: some View {
@@ -83,8 +83,12 @@ struct MenuBarDropdownView: View {
         }
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .controlBackgroundColor))
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.primary.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                )
         )
     }
 
@@ -257,7 +261,11 @@ private struct CountryChip: View {
         .padding(.vertical, 5)
         .background(
             Capsule()
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(Color.primary.opacity(0.06))
+                .overlay(
+                    Capsule()
+                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                )
         )
     }
 }

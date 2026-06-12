@@ -1,0 +1,69 @@
+disabled_rules:
+  - trailing_whitespace
+
+opt_in_rules:
+  - closure_body_length
+  - cyclomatic_complexity
+  - file_length
+  - function_body_length
+  - function_parameter_count
+  - nesting
+  - private_swiftui_state
+  - unused_optional_binding
+  - unused_parameter
+  - unused_setter_value
+
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - Sources/WorldCupBar/Assets.xcassets
+  - .build
+
+line_length:
+  warning: 120
+  error: 120
+  ignores_comments: true
+  ignores_urls: true
+
+cyclomatic_complexity:
+  warning: 8
+  error: 12
+
+function_body_length:
+  warning: 40
+  error: 60
+
+closure_body_length:
+  warning: 20
+  error: 30
+
+function_parameter_count:
+  warning: 6
+  error: 8
+  ignores_default_parameters: true
+
+nesting:
+  type_level:
+    warning: 2
+    error: 3
+  function_level:
+    warning: 3
+    error: 4
+
+file_length:
+  warning: 400
+  error: 600
+  ignore_comment_only_lines: true
+
+unused_declaration:
+  severity: warning
+  include_public_and_open: false
+
+unused_import:
+  severity: warning

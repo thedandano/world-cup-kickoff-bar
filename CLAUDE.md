@@ -1,0 +1,105 @@
+# World Cup Bar — Claude Instructions
+
+## Project Overview
+
+A macOS menu bar app (SwiftUI, SwiftPM, macOS 13+) that shows live World Cup 2026 match scores and upcoming fixtures. Menu bar-only (`LSUIElement = YES`). Distributed as a paid one-time purchase (App Store or direct download).
+
+**Data source:** `worldcup26.ir` — no auth required for read endpoints.  
+**Bundle ID:** `com.michilotl.WorldCupBar`  
+**Minimum OS:** macOS 13.0
+
+---
+
+## Architecture
+
+### MVVM — strict enforcement
+
+- **Model layer** (`WorldCupBarCore` target): `WorldCupMatch`, `Country`, `WorldCupSnapshot`, repository, mapper, formatter, selection service. Zero UI imports.  
+- **ViewModel** (`WorldCupBarViewModel`): `@MainActor ObservableObject`. Owns all business logic, UserDefaults persistence, `NotificationScheduler` coordination. Never imports AppKit/SwiftUI directly.  
+- **View layer** (`WorldCupBar` target): `MenuBarDropdownView`, `SettingsView`, `WorldCupBarApp`. Binds to ViewModel only. Local `@State` is fine for display-only state (e.g., search text).  
+
+Do not put business logic in Views. Do not put UI imports in Core.
+
+### Module split
+
+```
+WorldCupBarCore   — pure Swift, no UI, no external deps
+WorldCupBar       — SwiftUI app, depends on Core + TelemetryDeck + Sparkle
+```
+
+---
+
+## Development Commands
+
+```bash
+# Build
+swift build
+
+# Test
+swift test
+
+# Lint (requires swiftlint installed)
+swiftlint lint --strict
+
+# Lint with analyzer rules
+swiftlint analyze --compiler-log-path compile_commands.json
+```
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `Sources/WorldCupBarCore/WorldCup26APIClient.swift` | HTTP calls to worldcup26.ir |
+| `Sources/WorldCupBarCore/WorldCup26Mapper.swift` | Maps API DTOs → domain model; skips TBD knockout games |
+| `Sources/WorldCupBarCore/WorldCupRepository.swift` | Retry + cache + change-detection |
+| `Sources/WorldCupBarCore/MatchFormatter.swift` | All string formatting for match display |
+| `Sources/WorldCupBar/WorldCupBarViewModel.swift` | Published state, polling, notifications |
+| `Sources/WorldCupBar/NotificationScheduler.swift` | UNUserNotificationCenter scheduling |
+| `Sources/WorldCupBar/MenuBarDropdownView.swift` | Menu bar popover UI |
+| `Sources/WorldCupBar/SettingsView.swift` | Settings window |
+
+---
+
+## Testing
+
+- Framework: Swift Testing (`@Test`, `#expect`)  
+- Run: `swift test`  
+- Tests live in `Tests/WorldCupBarCoreTests/` (pure logic) and `Tests/WorldCupBarTests/` (ViewModel)  
+- Never mock `UNUserNotificationCenter` directly — inject via `NotificationScheduling` protocol  
+- Never use `UserDefaults.standard` in tests — inject or isolate  
+
+---
+
+## Change-Detection Polling
+
+`WorldCupRepository.refreshSnapshot` compares the new snapshot against the cached one via `matchesContentEqual`. If scores and statuses are identical, it returns the cached snapshot unchanged — skipping the store write and avoiding unnecessary ViewModel/UI updates.
+
+Polling intervals:
+- Live match active: 30 s  
+- All other states: 5 min  
+
+---
+
+## Notifications
+
+`NotificationScheduler` schedules `UNCalendarNotificationTrigger` for every upcoming match of a followed country. Notification identifier = `"kickoff-\(match.id)"` — rescheduling is idempotent. Minutes-before is configurable (Off / 5 / 15 / 30 / 60 min); default 15.
+
+---
+
+## Sparkle Auto-Update
+
+Add `SUFeedURL` and `SUPublicEDKey` to `Info.plist` before distributing outside the App Store. Generate keys with `./generate_keys` from the Sparkle binary tools. Store the private key in the CI environment only (never in the repo).
+
+---
+
+## Linting
+
+SwiftLint config: `.swiftlint.yml`. Run before committing. CI will fail on lint errors.
+
+---
+
+## Commits
+
+Frequent, atomic commits. Commit message format: `type(scope): description` (e.g., `feat(notifications): add configurable kickoff alerts`).
