@@ -3,6 +3,7 @@ import WorldCupBarCore
 
 struct SettingsView: View {
     @ObservedObject var viewModel: WorldCupBarViewModel
+    @State private var countrySearch = ""
 
     var body: some View {
         ScrollView {
@@ -11,6 +12,7 @@ struct SettingsView: View {
                 displaySection
                 followedCountriesSection
                 analyticsSection
+                notificationsSection
                 dataSection
             }
             .padding(.horizontal, 34)
@@ -63,8 +65,8 @@ struct SettingsView: View {
 
     private var followedCountriesSection: some View {
         SettingsSection(
-            title: "Followed Countries",
-            subtitle: "Prioritize these teams when they are live."
+            title: "Following",
+            subtitle: "Teams you follow get priority in the menu bar."
         ) {
             VStack(spacing: 0) {
                 if viewModel.availableCountries.isEmpty {
@@ -73,18 +75,51 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                         .padding(16)
                 } else {
-                    ForEach(viewModel.availableCountries) { country in
-                        CountrySettingsRow(
-                            country: country,
-                            isFollowed: Binding(
-                                get: { viewModel.followedCountryCodes.contains(country.code) },
-                                set: { viewModel.setFollowed(country, isFollowed: $0) }
-                            )
-                        )
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+                        TextField("Search countries", text: $countrySearch)
+                            .textFieldStyle(.plain)
+                        if !countrySearch.isEmpty {
+                            Button {
+                                countrySearch = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
 
-                        if country.id != viewModel.availableCountries.last?.id {
-                            Divider()
-                                .padding(.leading, 46)
+                    Divider()
+
+                    let filtered = viewModel.availableCountries.filter { country in
+                        countrySearch.isEmpty
+                            || country.name.localizedCaseInsensitiveContains(countrySearch)
+                            || country.code.localizedCaseInsensitiveContains(countrySearch)
+                    }
+
+                    if filtered.isEmpty {
+                        Text("No countries match \"\(countrySearch)\".")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .padding(16)
+                    } else {
+                        ForEach(filtered) { country in
+                            CountrySettingsRow(
+                                country: country,
+                                isFollowed: Binding(
+                                    get: { viewModel.followedCountryCodes.contains(country.code) },
+                                    set: { viewModel.setFollowed(country, isFollowed: $0) }
+                                )
+                            )
+
+                            if country.id != filtered.last?.id {
+                                Divider()
+                                    .padding(.leading, 46)
+                            }
                         }
                     }
                 }
@@ -117,6 +152,36 @@ struct SettingsView: View {
                 Toggle("Usage analytics", isOn: $viewModel.analyticsEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
+            }
+            .padding(16)
+        }
+    }
+
+    private var notificationsSection: some View {
+        SettingsSection(
+            title: "Notifications",
+            subtitle: "Get alerted before followed matches kick off."
+        ) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Kickoff alert")
+                        .font(.system(size: 14, weight: .medium))
+                    Text("Notify before a followed match starts.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Picker("Kickoff alert", selection: $viewModel.notificationMinutesBefore) {
+                    Text("Off").tag(0)
+                    Text("5 min").tag(5)
+                    Text("15 min").tag(15)
+                    Text("30 min").tag(30)
+                    Text("60 min").tag(60)
+                }
+                .labelsHidden()
+                .frame(width: 120)
             }
             .padding(16)
         }

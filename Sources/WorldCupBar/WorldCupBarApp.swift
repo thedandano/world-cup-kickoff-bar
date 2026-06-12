@@ -26,6 +26,7 @@ struct WorldCupBarApp: App {
             MenuBarDropdownView(viewModel: viewModel)
                 .frame(width: 360)
                 .task {
+                    await NotificationScheduler.shared.requestPermission()
                     await viewModel.start()
                 }
         } label: {

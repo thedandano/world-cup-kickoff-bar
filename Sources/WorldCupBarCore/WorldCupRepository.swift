@@ -57,6 +57,15 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
                 },
                 shouldRetry: shouldRetry(error:)
             )
+            let cached = try? store.load()
+            if let cached, cached.matchesContentEqual(to: result.value) {
+                telemetry.recordRefreshSucceeded(
+                    snapshot: cached,
+                    latency: start.duration(to: .now),
+                    attemptCount: result.attemptCount
+                )
+                return cached
+            }
             try store.save(result.value)
             telemetry.recordRefreshSucceeded(
                 snapshot: result.value,

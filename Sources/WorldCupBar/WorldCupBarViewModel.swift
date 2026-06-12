@@ -18,12 +18,22 @@ final class WorldCupBarViewModel: ObservableObject {
             UserDefaults.standard.set(Array(followedCountryCodes).sorted(), forKey: UserDefaultsKeys.followedCountryCodes)
             analytics.recordUserAction("followed_countries_changed", properties: ["count": "\(followedCountryCodes.count)"])
             updateDisplayState()
+            Task { await scheduleNotifications() }
         }
     }
     @Published var analyticsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(analyticsEnabled, forKey: UserDefaultsKeys.analyticsEnabled)
             analytics.setAnalyticsEnabled(analyticsEnabled)
+        }
+    }
+    @Published var notificationMinutesBefore: Int {
+        didSet {
+            UserDefaults.standard.set(
+                notificationMinutesBefore,
+                forKey: UserDefaultsKeys.notificationMinutesBefore
+            )
+            Task { await scheduleNotifications() }
         }
     }
     @Published var searchText = ""
@@ -35,6 +45,7 @@ final class WorldCupBarViewModel: ObservableObject {
     private let selectionService = MatchSelectionService()
     private let formatter = MatchFormatter()
     private let analytics: any WorldCupAnalyticsTracking
+    private let notificationScheduler: any NotificationScheduling
     private var pollingTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var hasStarted = false
@@ -100,9 +111,14 @@ final class WorldCupBarViewModel: ObservableObject {
         }
     }
 
-    init(repository: any WorldCupDataProviding, analytics: any WorldCupAnalyticsTracking) {
+    init(
+        repository: any WorldCupDataProviding,
+        analytics: any WorldCupAnalyticsTracking,
+        notificationScheduler: any NotificationScheduling = NotificationScheduler.shared
+    ) {
         self.repository = repository
         self.analytics = analytics
+        self.notificationScheduler = notificationScheduler
 
         let storedDisplayMode = UserDefaults.standard.string(forKey: UserDefaultsKeys.displayMode)
             .flatMap(DisplayMode.init(rawValue:))
@@ -112,6 +128,9 @@ final class WorldCupBarViewModel: ObservableObject {
         self.followedCountryCodes = Set(storedCodes ?? ["USA", "MEX", "CAN"])
 
         self.analyticsEnabled = UserDefaults.standard.object(forKey: UserDefaultsKeys.analyticsEnabled) as? Bool ?? true
+        self.notificationMinutesBefore = UserDefaults.standard.object(
+            forKey: UserDefaultsKeys.notificationMinutesBefore
+        ) as? Int ?? 15
         self.analytics.setAnalyticsEnabled(analyticsEnabled)
     }
 
@@ -208,6 +227,15 @@ final class WorldCupBarViewModel: ObservableObject {
         availableCountries = snapshot.countries
         lastUpdated = snapshot.fetchedAt
         updateDisplayState()
+        Task { await scheduleNotifications() }
+    }
+
+    private func scheduleNotifications() async {
+        await notificationScheduler.schedule(
+            matches: matches,
+            followedCodes: followedCountryCodes,
+            minutesBefore: notificationMinutesBefore
+        )
     }
 
     private func updateDisplayState() {
@@ -260,6 +288,7 @@ private enum UserDefaultsKeys {
     static let displayMode = "displayMode"
     static let followedCountryCodes = "followedCountryCodes"
     static let analyticsEnabled = "analyticsEnabled"
+    static let notificationMinutesBefore = "notificationMinutesBefore"
 }
 
 enum WorldCupContentState: Equatable {

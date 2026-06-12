@@ -10,4 +10,13 @@ public struct WorldCupSnapshot: Codable, Equatable, Sendable {
         self.countries = countries
         self.fetchedAt = fetchedAt
     }
+
+    public func matchesContentEqual(to other: WorldCupSnapshot) -> Bool {
+        guard matches.count == other.matches.count else { return false }
+        let byID = Dictionary(uniqueKeysWithValues: matches.map { ($0.id, $0) })
+        return other.matches.allSatisfy { otherMatch in
+            guard let cached = byID[otherMatch.id] else { return false }
+            return cached.status == otherMatch.status && cached.score == otherMatch.score
+        }
+    }
 }

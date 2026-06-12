@@ -22,7 +22,7 @@ import WorldCupBarCore
     )
     let repository = StubRepository(cachedSnapshot: snapshot, refreshedSnapshot: snapshot)
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics)
+    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
 
     await viewModel.start()
 
@@ -34,7 +34,7 @@ import WorldCupBarCore
 @Test func viewModelShowsUnavailableStateWithoutCacheWhenRefreshFails() async {
     let repository = StubRepository(cachedSnapshot: nil, refreshError: URLError(.timedOut))
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics)
+    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
 
     await viewModel.start()
 
@@ -50,7 +50,7 @@ import WorldCupBarCore
     )
     let repository = StubRepository(cachedSnapshot: cached, refreshError: URLError(.timedOut))
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics)
+    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
 
     await viewModel.start()
 
@@ -66,7 +66,7 @@ import WorldCupBarCore
 @Test func viewModelAnalyticsOptOutStopsEventRecording() async {
     let repository = StubRepository(cachedSnapshot: nil, refreshedSnapshot: nil)
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics)
+    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
 
     await viewModel.start()
     let countBefore = analytics.recorded.count
@@ -94,6 +94,13 @@ private struct StubRepository: WorldCupDataProviding {
         }
         return refreshedSnapshot ?? WorldCupSnapshot(matches: [], countries: [], fetchedAt: Date())
     }
+}
+
+@MainActor
+private final class StubNotificationScheduler: NotificationScheduling {
+    func requestPermission() async {}
+    func schedule(matches: [WorldCupMatch], followedCodes: Set<String>, minutesBefore: Int) async {}
+    func cancelAll() {}
 }
 
 private final class StubAnalytics: @unchecked Sendable, WorldCupAnalyticsTracking {
