@@ -2,8 +2,8 @@ import SwiftUI
 import WorldCupBarCore
 
 struct SettingsView: View {
-    @ObservedObject var viewModel: WorldCupBarViewModel
-    @ObservedObject var updaterViewModel: UpdaterViewModel
+    var viewModel: WorldCupBarViewModel
+    var updaterViewModel: UpdaterViewModel
     @State private var selectedPanel: SettingsPanel? = .following
 
     private var activePanel: SettingsPanel { selectedPanel ?? .following }
@@ -20,8 +20,8 @@ struct SettingsView: View {
         } detail: {
             detailContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.regularMaterial)
         }
+        .tint(WCBColor.accent)
         .frame(minWidth: 680, minHeight: 480)
     }
 
@@ -66,17 +66,17 @@ private enum SettingsPanel: CaseIterable, Hashable {
 // MARK: - Panels
 
 private struct DisplayPanel: View {
-    @ObservedObject var viewModel: WorldCupBarViewModel
+    @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
         PanelScrollView {
             SettingsCard(title: "Menu Bar Display", subtitle: "Choose the compact match label.") {
-                HStack(alignment: .center, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .center, spacing: WCBSpacing.lg) {
+                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Display mode")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(WCBFont.rowPrimary)
                         Text("Show team codes or flag emoji.")
-                            .font(.system(size: 12))
+                            .font(WCBFont.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -89,14 +89,14 @@ private struct DisplayPanel: View {
                     .frame(width: 250)
                     .help("Controls whether compact match labels use team codes or flags.")
                 }
-                .padding(16)
+                .padding(WCBSpacing.md)
             }
         }
     }
 }
 
 private struct FollowingPanel: View {
-    @ObservedObject var viewModel: WorldCupBarViewModel
+    var viewModel: WorldCupBarViewModel
     @State private var search = ""
 
     private var filtered: [Country] {
@@ -115,9 +115,9 @@ private struct FollowingPanel: View {
             ) {
                 if viewModel.availableCountries.isEmpty {
                     Text("Team list will appear after the first live refresh.")
-                        .font(.system(size: 12))
+                        .font(WCBFont.caption)
                         .foregroundStyle(.secondary)
-                        .padding(16)
+                        .padding(WCBSpacing.md)
                 } else {
                     HStack {
                         Image(systemName: "magnifyingglass")
@@ -132,16 +132,16 @@ private struct FollowingPanel: View {
                             .buttonStyle(.borderless)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, WCBSpacing.md)
                     .padding(.vertical, 10)
 
                     Divider()
 
                     if filtered.isEmpty {
                         Text("No countries match \"\(search)\".")
-                            .font(.system(size: 12))
+                            .font(WCBFont.caption)
                             .foregroundStyle(.secondary)
-                            .padding(16)
+                            .padding(WCBSpacing.md)
                     } else {
                         ForEach(filtered) { country in
                             CountrySettingsRow(
@@ -160,9 +160,9 @@ private struct FollowingPanel: View {
                     Divider()
 
                     Text("Live followed matches appear before upcoming matches.")
-                        .font(.system(size: 12))
+                        .font(WCBFont.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, WCBSpacing.md)
                         .padding(.vertical, 12)
                 }
             }
@@ -171,17 +171,17 @@ private struct FollowingPanel: View {
 }
 
 private struct NotificationsPanel: View {
-    @ObservedObject var viewModel: WorldCupBarViewModel
+    @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
         PanelScrollView {
             SettingsCard(title: "Kickoff Alerts", subtitle: "Get notified before followed matches kick off.") {
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: WCBSpacing.md) {
+                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Alert timing")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(WCBFont.rowPrimary)
                         Text("Notify before a followed match starts.")
-                            .font(.system(size: 12))
+                            .font(WCBFont.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -195,24 +195,24 @@ private struct NotificationsPanel: View {
                     .labelsHidden()
                     .frame(width: 120)
                 }
-                .padding(16)
+                .padding(WCBSpacing.md)
             }
         }
     }
 }
 
 private struct AnalyticsPanel: View {
-    @ObservedObject var viewModel: WorldCupBarViewModel
+    @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
         PanelScrollView {
             SettingsCard(title: "Analytics", subtitle: "Control product analytics.") {
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: WCBSpacing.md) {
+                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Usage analytics")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(WCBFont.rowPrimary)
                         Text("Turn off product analytics any time.")
-                            .font(.system(size: 12))
+                            .font(WCBFont.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -220,25 +220,25 @@ private struct AnalyticsPanel: View {
                         .labelsHidden()
                         .toggleStyle(.switch)
                 }
-                .padding(16)
+                .padding(WCBSpacing.md)
             }
         }
     }
 }
 
 private struct DataPanel: View {
-    @ObservedObject var viewModel: WorldCupBarViewModel
-    @ObservedObject var updaterViewModel: UpdaterViewModel
+    var viewModel: WorldCupBarViewModel
+    var updaterViewModel: UpdaterViewModel
 
     var body: some View {
         PanelScrollView {
             SettingsCard(title: "Data", subtitle: "Refresh match data or check for app updates.") {
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: WCBSpacing.md) {
+                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Match data")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(WCBFont.rowPrimary)
                         Text(viewModel.footerStatusText)
-                            .font(.system(size: 12))
+                            .font(WCBFont.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -248,16 +248,16 @@ private struct DataPanel: View {
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
                 }
-                .padding(16)
+                .padding(WCBSpacing.md)
 
-                Divider().padding(.leading, 16)
+                Divider().padding(.leading, WCBSpacing.md)
 
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: WCBSpacing.md) {
+                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("App updates")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(WCBFont.rowPrimary)
                         Text("Check for a new version of World Cup Bar.")
-                            .font(.system(size: 12))
+                            .font(WCBFont.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -266,7 +266,7 @@ private struct DataPanel: View {
                     }
                     .disabled(!updaterViewModel.canCheckForUpdates)
                 }
-                .padding(16)
+                .padding(WCBSpacing.md)
             }
         }
     }
@@ -279,10 +279,10 @@ private struct PanelScrollView<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: WCBSpacing.lg) {
                 content
             }
-            .padding(24)
+            .padding(WCBSpacing.lg)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -295,12 +295,12 @@ private struct SettingsCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(WCBFont.cardTitle)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .font(WCBFont.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -309,11 +309,11 @@ private struct SettingsCard<Content: View>: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                RoundedRectangle(cornerRadius: WCBRadius.md)
+                    .fill(.ultraThinMaterial)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
+                        RoundedRectangle(cornerRadius: WCBRadius.md)
+                            .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
                     )
             )
         }
@@ -332,11 +332,10 @@ private struct CountrySettingsRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(country.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(WCBFont.rowPrimary)
                 Text(country.code)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(WCBFont.codeMono)
                     .foregroundStyle(.secondary)
-                    .monospaced()
             }
 
             Spacer(minLength: 24)
@@ -345,7 +344,7 @@ private struct CountrySettingsRow: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, WCBSpacing.md)
         .frame(minHeight: 48)
         .frame(maxWidth: .infinity, alignment: .leading)
     }

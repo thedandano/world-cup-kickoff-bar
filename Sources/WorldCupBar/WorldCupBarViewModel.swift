@@ -3,17 +3,18 @@ import SwiftUI
 import WorldCupBarCore
 
 @MainActor
-final class WorldCupBarViewModel: ObservableObject {
-    @Published private(set) var matches: [WorldCupMatch] = []
-    @Published private(set) var displayState: MatchDisplayState = .empty
-    @Published private(set) var contentState: WorldCupContentState = .loading
-    @Published var displayMode: DisplayMode {
+@Observable
+final class WorldCupBarViewModel {
+    private(set) var matches: [WorldCupMatch] = []
+    private(set) var displayState: MatchDisplayState = .empty
+    private(set) var contentState: WorldCupContentState = .loading
+    var displayMode: DisplayMode {
         didSet {
             UserDefaults.standard.set(displayMode.rawValue, forKey: UserDefaultsKeys.displayMode)
             analytics.recordUserAction("display_mode_changed", properties: ["mode": displayMode.rawValue])
         }
     }
-    @Published var followedCountryCodes: Set<String> {
+    var followedCountryCodes: Set<String> {
         didSet {
             UserDefaults.standard.set(Array(followedCountryCodes).sorted(), forKey: UserDefaultsKeys.followedCountryCodes)
             analytics.recordUserAction("followed_countries_changed", properties: ["count": "\(followedCountryCodes.count)"])
@@ -21,13 +22,13 @@ final class WorldCupBarViewModel: ObservableObject {
             Task { await scheduleNotifications() }
         }
     }
-    @Published var analyticsEnabled: Bool {
+    var analyticsEnabled: Bool {
         didSet {
             UserDefaults.standard.set(analyticsEnabled, forKey: UserDefaultsKeys.analyticsEnabled)
             analytics.setAnalyticsEnabled(analyticsEnabled)
         }
     }
-    @Published var notificationMinutesBefore: Int {
+    var notificationMinutesBefore: Int {
         didSet {
             UserDefaults.standard.set(
                 notificationMinutesBefore,
@@ -36,11 +37,11 @@ final class WorldCupBarViewModel: ObservableObject {
             Task { await scheduleNotifications() }
         }
     }
-    @Published var searchText = ""
-    @Published var lastUpdated: Date?
-    @Published private(set) var refreshState: RefreshState = .idle
+    var searchText = ""
+    var lastUpdated: Date?
+    private(set) var refreshState: RefreshState = .idle
 
-    @Published private(set) var availableCountries: [Country] = []
+    private(set) var availableCountries: [Country] = []
     private let repository: any WorldCupDataProviding
     private let selectionService = MatchSelectionService()
     private let formatter = MatchFormatter()

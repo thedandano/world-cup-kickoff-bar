@@ -1,16 +1,23 @@
+import Combine
 import Sparkle
 import SwiftUI
 
 @MainActor
-final class UpdaterViewModel: ObservableObject {
-    @Published private(set) var canCheckForUpdates = false
+@Observable
+final class UpdaterViewModel {
+    private(set) var canCheckForUpdates = false
 
     private let updater: SPUUpdater
+    private var cancellable: AnyCancellable?
 
     init(updater: SPUUpdater) {
         self.updater = updater
-        updater.publisher(for: \.canCheckForUpdates)
-            .assign(to: &$canCheckForUpdates)
+        canCheckForUpdates = updater.canCheckForUpdates
+        cancellable = updater.publisher(for: \.canCheckForUpdates)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in
+                self?.canCheckForUpdates = value
+            }
     }
 
     func checkForUpdates() {

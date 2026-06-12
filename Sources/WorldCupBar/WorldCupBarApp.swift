@@ -4,8 +4,8 @@ import WorldCupBarCore
 
 @main
 struct WorldCupBarApp: App {
-    @StateObject private var viewModel: WorldCupBarViewModel
-    @StateObject private var updaterViewModel: UpdaterViewModel
+    @State private var viewModel: WorldCupBarViewModel
+    @State private var updaterViewModel: UpdaterViewModel
     private let updaterController: SPUStandardUpdaterController
 
     init() {
@@ -15,7 +15,7 @@ struct WorldCupBarApp: App {
             userDriverDelegate: nil
         )
         updaterController = controller
-        _updaterViewModel = StateObject(wrappedValue: UpdaterViewModel(updater: controller.updater))
+        _updaterViewModel = State(wrappedValue: UpdaterViewModel(updater: controller.updater))
         let monitoring = WorldCupMonitoringService(configuration: .fromEnvironment())
         let repository = WorldCupRepository(
             client: WorldCup26APIClient(),
@@ -23,7 +23,7 @@ struct WorldCupBarApp: App {
             store: WorldCupSnapshotStore(fileURL: Self.snapshotCacheURL),
             telemetry: monitoring
         )
-        _viewModel = StateObject(
+        _viewModel = State(
             wrappedValue: WorldCupBarViewModel(
                 repository: repository,
                 analytics: monitoring
@@ -35,7 +35,7 @@ struct WorldCupBarApp: App {
         MenuBarExtra {
             MenuBarDropdownView(viewModel: viewModel)
                 .frame(width: 360)
-                .tint(.lavender)
+                .tint(WCBColor.accent)
                 .task {
                     await NotificationScheduler.shared.requestPermission()
                     await viewModel.start()
@@ -49,7 +49,7 @@ struct WorldCupBarApp: App {
 
         Window("World Cup Bar Settings", id: "settings") {
             SettingsView(viewModel: viewModel, updaterViewModel: updaterViewModel)
-                .tint(.lavender)
+                .tint(WCBColor.accent)
         }
         .defaultSize(width: 760, height: 680)
     }

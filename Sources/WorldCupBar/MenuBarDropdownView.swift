@@ -4,7 +4,7 @@ import WorldCupBarCore
 
 struct MenuBarDropdownView: View {
     @Environment(\.openWindow) private var openWindow
-    @ObservedObject var viewModel: WorldCupBarViewModel
+    @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
