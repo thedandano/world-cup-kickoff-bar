@@ -12,6 +12,7 @@ struct SettingsView: View {
         NavigationSplitView {
             List(SettingsPanel.allCases, id: \.self, selection: $selectedPanel) { panel in
                 Label(panel.title, systemImage: panel.icon)
+                    .foregroundStyle(Color.primary)
                     .tag(panel)
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
@@ -19,7 +20,7 @@ struct SettingsView: View {
         } detail: {
             detailContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(.regularMaterial)
         }
         .frame(minWidth: 680, minHeight: 480)
     }
