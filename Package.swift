@@ -29,7 +29,8 @@ let package = Package(
                 "WorldCupBarCore",
                 .product(name: "TelemetryDeck", package: "SwiftSDK"),
                 .product(name: "Sparkle", package: "Sparkle")
-            ]
+            ],
+            exclude: ["Info.plist", "WorldCupBar.entitlements"]
         ),
         .testTarget(
             name: "WorldCupBarCoreTests",

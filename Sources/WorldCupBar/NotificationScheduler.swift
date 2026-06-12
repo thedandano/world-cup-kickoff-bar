@@ -12,12 +12,17 @@ protocol NotificationScheduling: AnyObject {
 final class NotificationScheduler: NotificationScheduling {
     static let shared = NotificationScheduler()
 
+    // UNUserNotificationCenter requires a real .app bundle; it crashes when run via `swift run`.
+    private var isRunningInAppBundle: Bool { Bundle.main.bundleIdentifier != nil }
+
     func requestPermission() async {
+        guard isRunningInAppBundle else { return }
         _ = try? await UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound])
     }
 
     func schedule(matches: [WorldCupMatch], followedCodes: Set<String>, minutesBefore: Int) async {
+        guard isRunningInAppBundle else { return }
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: matches.map { "kickoff-\($0.id)" })
 
@@ -52,6 +57,7 @@ final class NotificationScheduler: NotificationScheduling {
     }
 
     func cancelAll() {
+        guard isRunningInAppBundle else { return }
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
 }
