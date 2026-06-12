@@ -48,22 +48,66 @@ struct VisualEffectBackground: NSViewRepresentable {
     }
 }
 
-// Makes the hosting NSWindow transparent so a vibrancy view can blend
-// through to the desktop. Placed as a background() on the settings root view.
+// Configures the hosting NSWindow for full translucency and installs a
+// behind-window NSVisualEffectView at the contentView level — behind the
+// NSSplitView — so both columns show the frosted glass effect.
+// Placed as a background() on the settings root view.
 struct SettingsWindowBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let effectView = NSVisualEffectView()
-        effectView.material = .sidebar
-        effectView.blendingMode = .behindWindow
-        effectView.state = .active
-        return effectView
-    }
+    func makeNSView(context: Context) -> NSView { NSView() }
 
     func updateNSView(_ nsView: NSView, context: Context) {
         DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
+            guard let window = nsView.window, let contentView = window.contentView else { return }
             window.isOpaque = false
             window.backgroundColor = .clear
+            window.titlebarAppearsTransparent = true
+            // Forces white title bar text regardless of desktop colour.
+            if window.appearance?.name != .darkAqua {
+                window.appearance = NSAppearance(named: .darkAqua)
+            }
+            Self.ensureVibrancy(in: contentView)
+            Self.clearSplitPanes(in: contentView)
+        }
+    }
+
+    // Inserts one NSVisualEffectView behind all other content in the window.
+    private static let vibrancyID = NSUserInterfaceItemIdentifier("wcb.settings.vibrancy")
+
+    private static func ensureVibrancy(in root: NSView) {
+        if root.subviews.contains(where: { $0.identifier == vibrancyID }) { return }
+        let fx = NSVisualEffectView()
+        fx.identifier = vibrancyID
+        fx.material = .hudWindow
+        fx.blendingMode = .behindWindow
+        fx.state = .active
+        fx.translatesAutoresizingMaskIntoConstraints = false
+        let anchor = root.subviews.first
+        root.addSubview(fx, positioned: .below, relativeTo: anchor)
+        NSLayoutConstraint.activate([
+            fx.topAnchor.constraint(equalTo: root.topAnchor),
+            fx.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            fx.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            fx.trailingAnchor.constraint(equalTo: root.trailingAnchor)
+        ])
+    }
+
+    // Clears the NSSplitView container and its non-vibrancy pane NSViews so
+    // the window-level vibrancy shows through instead of their default fill.
+    private static func clearSplitPanes(in view: NSView) {
+        if let split = view as? NSSplitView {
+            split.wantsLayer = true
+            split.layer?.backgroundColor = NSColor.clear.cgColor
+            for pane in split.subviews where !(pane is NSVisualEffectView) {
+                pane.wantsLayer = true
+                pane.layer?.backgroundColor = NSColor.clear.cgColor
+                for child in pane.subviews where !(child is NSVisualEffectView) {
+                    child.wantsLayer = true
+                    child.layer?.backgroundColor = NSColor.clear.cgColor
+                }
+            }
+        }
+        for sub in view.subviews where !(sub is NSVisualEffectView) {
+            clearSplitPanes(in: sub)
         }
     }
 }
