@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Lint · Test · Build
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Swift packages
+        run: swift package resolve
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint lint --strict
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build (debug)
+        run: swift build

@@ -4,72 +4,116 @@ import WorldCupBarCore
 struct SettingsView: View {
     @ObservedObject var viewModel: WorldCupBarViewModel
     @ObservedObject var updaterViewModel: UpdaterViewModel
-    @State private var countrySearch = ""
+    @State private var selectedPanel: SettingsPanel? = .following
+
+    private var activePanel: SettingsPanel { selectedPanel ?? .following }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                header
-                displaySection
-                followedCountriesSection
-                analyticsSection
-                notificationsSection
-                dataSection
+        NavigationSplitView {
+            List(SettingsPanel.allCases, id: \.self, selection: $selectedPanel) { panel in
+                Label(panel.title, systemImage: panel.icon)
+                    .tag(panel)
             }
-            .padding(.horizontal, 34)
-            .padding(.vertical, 30)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-        .frame(minWidth: 720, minHeight: 620)
-        .background(VisualEffectBackground().ignoresSafeArea())
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("World Cup Bar Settings")
-                .font(.system(size: 22, weight: .semibold))
-
-            Text("Set what appears in the menu bar.")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var displaySection: some View {
-        SettingsSection(
-            title: "Display",
-            subtitle: "Choose the compact match label."
-        ) {
-            HStack(alignment: .center, spacing: 20) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Menu bar display")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Show team codes or flags.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Picker("Menu bar display", selection: $viewModel.displayMode) {
-                    Text("Abbreviations").tag(DisplayMode.abbreviations)
-                    Text("Flags").tag(DisplayMode.flags)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 250)
-                .help("Controls whether compact match labels use team codes or flags.")
+            .navigationSplitViewColumnWidth(min: 160, ideal: 180)
+            .listStyle(.sidebar)
+        } detail: {
+            ZStack {
+                VisualEffectBackground().ignoresSafeArea()
+                detailContent
             }
-            .padding(16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 680, minHeight: 480)
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
+        switch activePanel {
+        case .display:       DisplayPanel(viewModel: viewModel)
+        case .following:     FollowingPanel(viewModel: viewModel)
+        case .notifications: NotificationsPanel(viewModel: viewModel)
+        case .analytics:     AnalyticsPanel(viewModel: viewModel)
+        case .data:          DataPanel(viewModel: viewModel, updaterViewModel: updaterViewModel)
+        }
+    }
+}
+
+// MARK: - Panel enum
+
+private enum SettingsPanel: CaseIterable, Hashable {
+    case display, following, notifications, analytics, data
+
+    var title: String {
+        switch self {
+        case .display:       return "Display"
+        case .following:     return "Following"
+        case .notifications: return "Notifications"
+        case .analytics:     return "Analytics"
+        case .data:          return "Data"
         }
     }
 
-    private var followedCountriesSection: some View {
-        SettingsSection(
-            title: "Following",
-            subtitle: "Teams you follow get priority in the menu bar."
-        ) {
-            VStack(spacing: 0) {
+    var icon: String {
+        switch self {
+        case .display:       return "menubar.rectangle"
+        case .following:     return "star"
+        case .notifications: return "bell"
+        case .analytics:     return "chart.bar"
+        case .data:          return "arrow.clockwise.icloud"
+        }
+    }
+}
+
+// MARK: - Panels
+
+private struct DisplayPanel: View {
+    @ObservedObject var viewModel: WorldCupBarViewModel
+
+    var body: some View {
+        PanelScrollView {
+            SettingsCard(title: "Menu Bar Display", subtitle: "Choose the compact match label.") {
+                HStack(alignment: .center, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Display mode")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Show team codes or flag emoji.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Picker("Display mode", selection: $viewModel.displayMode) {
+                        Text("Abbreviations").tag(DisplayMode.abbreviations)
+                        Text("Flags").tag(DisplayMode.flags)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 250)
+                    .help("Controls whether compact match labels use team codes or flags.")
+                }
+                .padding(16)
+            }
+        }
+    }
+}
+
+private struct FollowingPanel: View {
+    @ObservedObject var viewModel: WorldCupBarViewModel
+    @State private var search = ""
+
+    private var filtered: [Country] {
+        guard !search.isEmpty else { return viewModel.availableCountries }
+        return viewModel.availableCountries.filter {
+            $0.name.localizedCaseInsensitiveContains(search)
+                || $0.code.localizedCaseInsensitiveContains(search)
+        }
+    }
+
+    var body: some View {
+        PanelScrollView {
+            SettingsCard(
+                title: "Following",
+                subtitle: "Teams you follow get priority in the menu bar."
+            ) {
                 if viewModel.availableCountries.isEmpty {
                     Text("Team list will appear after the first live refresh.")
                         .font(.system(size: 12))
@@ -79,12 +123,10 @@ struct SettingsView: View {
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundStyle(.secondary)
-                        TextField("Search countries", text: $countrySearch)
+                        TextField("Search countries", text: $search)
                             .textFieldStyle(.plain)
-                        if !countrySearch.isEmpty {
-                            Button {
-                                countrySearch = ""
-                            } label: {
+                        if !search.isEmpty {
+                            Button { search = "" } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundStyle(.secondary)
                             }
@@ -96,14 +138,8 @@ struct SettingsView: View {
 
                     Divider()
 
-                    let filtered = viewModel.availableCountries.filter { country in
-                        countrySearch.isEmpty
-                            || country.name.localizedCaseInsensitiveContains(countrySearch)
-                            || country.code.localizedCaseInsensitiveContains(countrySearch)
-                    }
-
                     if filtered.isEmpty {
-                        Text("No countries match \"\(countrySearch)\".")
+                        Text("No countries match \"\(search)\".")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                             .padding(16)
@@ -116,129 +152,145 @@ struct SettingsView: View {
                                     set: { viewModel.setFollowed(country, isFollowed: $0) }
                                 )
                             )
-
                             if country.id != filtered.last?.id {
-                                Divider()
-                                    .padding(.leading, 46)
+                                Divider().padding(.leading, 46)
                             }
                         }
                     }
-                }
-            }
 
-            Text("Live followed matches appear before upcoming matches.")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-        }
-    }
+                    Divider()
 
-    private var analyticsSection: some View {
-        SettingsSection(
-            title: "Analytics",
-            subtitle: "Control product analytics."
-        ) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Usage analytics")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Turn off product analytics any time.")
+                    Text("Live followed matches appear before upcoming matches.")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Toggle("Usage analytics", isOn: $viewModel.analyticsEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-            .padding(16)
-        }
-    }
-
-    private var notificationsSection: some View {
-        SettingsSection(
-            title: "Notifications",
-            subtitle: "Get alerted before followed matches kick off."
-        ) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Kickoff alert")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Notify before a followed match starts.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Picker("Kickoff alert", selection: $viewModel.notificationMinutesBefore) {
-                    Text("Off").tag(0)
-                    Text("5 min").tag(5)
-                    Text("15 min").tag(15)
-                    Text("30 min").tag(30)
-                    Text("60 min").tag(60)
-                }
-                .labelsHidden()
-                .frame(width: 120)
-            }
-            .padding(16)
-        }
-    }
-
-    private var dataSection: some View {
-        SettingsSection(
-            title: "Data",
-            subtitle: "Refresh match data or check for app updates."
-        ) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Match data")
-                        .font(.system(size: 14, weight: .medium))
-                    Text(viewModel.footerStatusText)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Button {
-                    Task {
-                        await viewModel.refresh()
-                    }
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                 }
             }
-            .padding(16)
-
-            Divider()
-                .padding(.leading, 16)
-
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("App updates")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Check for a new version of World Cup Bar.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Button("Check for Updates") {
-                    updaterViewModel.checkForUpdates()
-                }
-                .disabled(!updaterViewModel.canCheckForUpdates)
-            }
-            .padding(16)
         }
     }
 }
 
-private struct SettingsSection<Content: View>: View {
+private struct NotificationsPanel: View {
+    @ObservedObject var viewModel: WorldCupBarViewModel
+
+    var body: some View {
+        PanelScrollView {
+            SettingsCard(title: "Kickoff Alerts", subtitle: "Get notified before followed matches kick off.") {
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Alert timing")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Notify before a followed match starts.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Picker("Alert timing", selection: $viewModel.notificationMinutesBefore) {
+                        Text("Off").tag(0)
+                        Text("5 min").tag(5)
+                        Text("15 min").tag(15)
+                        Text("30 min").tag(30)
+                        Text("60 min").tag(60)
+                    }
+                    .labelsHidden()
+                    .frame(width: 120)
+                }
+                .padding(16)
+            }
+        }
+    }
+}
+
+private struct AnalyticsPanel: View {
+    @ObservedObject var viewModel: WorldCupBarViewModel
+
+    var body: some View {
+        PanelScrollView {
+            SettingsCard(title: "Analytics", subtitle: "Control product analytics.") {
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Usage analytics")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Turn off product analytics any time.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("Usage analytics", isOn: $viewModel.analyticsEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                }
+                .padding(16)
+            }
+        }
+    }
+}
+
+private struct DataPanel: View {
+    @ObservedObject var viewModel: WorldCupBarViewModel
+    @ObservedObject var updaterViewModel: UpdaterViewModel
+
+    var body: some View {
+        PanelScrollView {
+            SettingsCard(title: "Data", subtitle: "Refresh match data or check for app updates.") {
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Match data")
+                            .font(.system(size: 14, weight: .medium))
+                        Text(viewModel.footerStatusText)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        Task { await viewModel.refresh() }
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                }
+                .padding(16)
+
+                Divider().padding(.leading, 16)
+
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("App updates")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Check for a new version of World Cup Bar.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Check for Updates") {
+                        updaterViewModel.checkForUpdates()
+                    }
+                    .disabled(!updaterViewModel.canCheckForUpdates)
+                }
+                .padding(16)
+            }
+        }
+    }
+}
+
+// MARK: - Shared layout components
+
+private struct PanelScrollView<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                content
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+private struct SettingsCard<Content: View>: View {
     let title: String
     let subtitle: String
     @ViewBuilder let content: Content
@@ -248,7 +300,6 @@ private struct SettingsSection<Content: View>: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
-
                 Text(subtitle)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
@@ -283,7 +334,6 @@ private struct CountrySettingsRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(country.name)
                     .font(.system(size: 14, weight: .medium))
-
                 Text(country.code)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
