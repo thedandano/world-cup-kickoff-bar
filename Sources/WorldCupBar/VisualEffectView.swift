@@ -48,66 +48,38 @@ struct VisualEffectBackground: NSViewRepresentable {
     }
 }
 
-// Configures the hosting NSWindow for full translucency and installs a
-// behind-window NSVisualEffectView at the contentView level — behind the
-// NSSplitView — so both columns show the frosted glass effect.
-// Placed as a background() on the settings root view.
+// Configures the hosting NSWindow for full translucency: non-opaque, clear
+// background, transparent title bar, and forced dark appearance for white
+// title-bar text. Place as .background() on the settings root view.
 struct SettingsWindowBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { NSView() }
 
     func updateNSView(_ nsView: NSView, context: Context) {
         DispatchQueue.main.async {
-            guard let window = nsView.window, let contentView = window.contentView else { return }
+            guard let window = nsView.window else { return }
             window.isOpaque = false
             window.backgroundColor = .clear
-            window.titlebarAppearsTransparent = true
-            // Forces white title bar text regardless of desktop colour.
+            // Let the system render the title bar as dark frosted glass with
+            // white text — titlebarAppearsTransparent would cause the toolbar
+            // text to visually overlap the detail-pane content.
             if window.appearance?.name != .darkAqua {
                 window.appearance = NSAppearance(named: .darkAqua)
             }
-            Self.ensureVibrancy(in: contentView)
-            Self.clearSplitPanes(in: contentView)
         }
     }
+}
 
-    // Inserts one NSVisualEffectView behind all other content in the window.
-    private static let vibrancyID = NSUserInterfaceItemIdentifier("wcb.settings.vibrancy")
-
-    private static func ensureVibrancy(in root: NSView) {
-        if root.subviews.contains(where: { $0.identifier == vibrancyID }) { return }
+// A behind-window NSVisualEffectView sized to fill whatever SwiftUI view it
+// backs. Use inside the NavigationSplitView detail column (via ZStack) so the
+// detail pane gets the same frosted-glass treatment as the sidebar.
+struct SettingsDetailBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
         let fx = NSVisualEffectView()
-        fx.identifier = vibrancyID
-        fx.material = .hudWindow
+        fx.material = .sidebar
         fx.blendingMode = .behindWindow
         fx.state = .active
-        fx.translatesAutoresizingMaskIntoConstraints = false
-        let anchor = root.subviews.first
-        root.addSubview(fx, positioned: .below, relativeTo: anchor)
-        NSLayoutConstraint.activate([
-            fx.topAnchor.constraint(equalTo: root.topAnchor),
-            fx.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-            fx.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            fx.trailingAnchor.constraint(equalTo: root.trailingAnchor)
-        ])
+        return fx
     }
 
-    // Clears the NSSplitView container and its non-vibrancy pane NSViews so
-    // the window-level vibrancy shows through instead of their default fill.
-    private static func clearSplitPanes(in view: NSView) {
-        if let split = view as? NSSplitView {
-            split.wantsLayer = true
-            split.layer?.backgroundColor = NSColor.clear.cgColor
-            for pane in split.subviews where !(pane is NSVisualEffectView) {
-                pane.wantsLayer = true
-                pane.layer?.backgroundColor = NSColor.clear.cgColor
-                for child in pane.subviews where !(child is NSVisualEffectView) {
-                    child.wantsLayer = true
-                    child.layer?.backgroundColor = NSColor.clear.cgColor
-                }
-            }
-        }
-        for sub in view.subviews where !(sub is NSVisualEffectView) {
-            clearSplitPanes(in: sub)
-        }
-    }
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }

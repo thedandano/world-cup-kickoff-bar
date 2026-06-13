@@ -4,6 +4,7 @@ import WorldCupBarCore
 
 @main
 struct WorldCupBarApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var viewModel: WorldCupBarViewModel
     @State private var updaterViewModel: UpdaterViewModel
     private let updaterController: SPUStandardUpdaterController
@@ -43,6 +44,7 @@ struct WorldCupBarApp: App {
             Text(viewModel.menuBarTitle)
                 .font(.system(size: 13, weight: .semibold, design: .default))
                 .monospacedDigit()
+                .background(OpenWindowListener())
                 .task {
                     await viewModel.start()
                 }
@@ -62,5 +64,18 @@ struct WorldCupBarApp: App {
         return applicationSupport
             .appending(path: "WorldCupBar")
             .appending(path: "snapshot-cache.json")
+    }
+}
+
+// Listens for open-settings notifications posted by AppDelegate's right-click
+// menu. Embedded in the always-rendered label view so openWindow is available.
+private struct OpenWindowListener: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Color.clear.frame(width: 0, height: 0)
+            .onReceive(NotificationCenter.default.publisher(for: .wcbOpenSettings)) { _ in
+                openWindow(id: "settings")
+            }
     }
 }

@@ -4,7 +4,7 @@ import WorldCupBarCore
 struct SettingsView: View {
     var viewModel: WorldCupBarViewModel
     var updaterViewModel: UpdaterViewModel
-    @State private var selectedPanel: SettingsPanel? = .following
+    @State private var selectedPanel: SettingsPanel? = .display
 
     private var activePanel: SettingsPanel { selectedPanel ?? .following }
 
@@ -18,8 +18,12 @@ struct SettingsView: View {
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
             .listStyle(.sidebar)
         } detail: {
-            detailContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ZStack {
+                SettingsDetailBackground()
+                    .ignoresSafeArea()
+                detailContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .tint(WCBColor.accent)
         .frame(minWidth: 680, minHeight: 480)
@@ -41,13 +45,13 @@ struct SettingsView: View {
 // MARK: - Panel enum
 
 private enum SettingsPanel: CaseIterable, Hashable {
-    case display, following, notifications, analytics, data
+    case display, notifications, following, analytics, data
 
     var title: String {
         switch self {
         case .display:       return "Display"
-        case .following:     return "Following"
         case .notifications: return "Notifications"
+        case .following:     return "Following"
         case .analytics:     return "Analytics"
         case .data:          return "Data"
         }
@@ -56,8 +60,8 @@ private enum SettingsPanel: CaseIterable, Hashable {
     var icon: String {
         switch self {
         case .display:       return "menubar.rectangle"
-        case .following:     return "star"
         case .notifications: return "bell"
+        case .following:     return "star"
         case .analytics:     return "chart.bar"
         case .data:          return "arrow.clockwise.icloud"
         }
