@@ -3,7 +3,7 @@ import SwiftUI
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout Void) -> CGSize {
         let maxWidth = proposal.width ?? 320
         let rows = rows(for: subviews, maxWidth: maxWidth)
         let height = rows.reduce(CGFloat.zero) { partialResult, row in
@@ -13,7 +13,7 @@ struct FlowLayout: Layout {
         return CGSize(width: maxWidth, height: height)
     }
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout Void) {
         let rows = rows(for: subviews, maxWidth: bounds.width)
         var origin = bounds.origin
 

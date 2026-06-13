@@ -93,7 +93,6 @@ public struct MatchFormatter: Sendable {
         country.hasRenderableFlag ? country.flagEmoji : country.code
     }
 
-
     private func flagAndCode(for country: Country) -> String {
         country.hasRenderableFlag ? "\(country.flagEmoji) \(country.code)" : country.code
     }

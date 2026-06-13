@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
+    func makeNSView(context _: Context) -> NSView {
         let container = NSView()
         container.wantsLayer = true
 
@@ -35,7 +35,7 @@ struct VisualEffectBackground: NSViewRepresentable {
         return container
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: NSView, context _: Context) {
         guard let tintView = nsView.subviews.last else { return }
         applyTint(to: tintView, for: NSApp.effectiveAppearance)
     }
@@ -52,9 +52,9 @@ struct VisualEffectBackground: NSViewRepresentable {
 // background, transparent title bar, and forced dark appearance for white
 // title-bar text. Place as .background() on the settings root view.
 struct SettingsWindowBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView { NSView() }
+    func makeNSView(context _: Context) -> NSView { NSView() }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: NSView, context _: Context) {
         DispatchQueue.main.async {
             guard let window = nsView.window else { return }
             window.isOpaque = false
@@ -73,7 +73,7 @@ struct SettingsWindowBackground: NSViewRepresentable {
 // backs. Use inside the NavigationSplitView detail column (via ZStack) so the
 // detail pane gets the same frosted-glass treatment as the sidebar.
 struct SettingsDetailBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
+    func makeNSView(context _: Context) -> NSVisualEffectView {
         let fx = NSVisualEffectView()
         fx.material = .sidebar
         fx.blendingMode = .behindWindow
@@ -81,5 +81,5 @@ struct SettingsDetailBackground: NSViewRepresentable {
         return fx
     }
 
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+    func updateNSView(_: NSVisualEffectView, context _: Context) {}
 }

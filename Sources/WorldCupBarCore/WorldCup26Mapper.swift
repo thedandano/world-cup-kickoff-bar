@@ -85,7 +85,7 @@ public struct WorldCup26Mapper: Sendable {
         return MatchScore(home: homeScore, away: awayScore)
     }
 
-    private func status(for game: WorldCup26GameDTO, kickoffDate: Date) -> MatchStatus {
+    private func status(for game: WorldCup26GameDTO, kickoffDate _: Date) -> MatchStatus {
         let elapsed = game.timeElapsed.lowercased()
         if elapsed == "finished" || game.finished == "TRUE" {
             return .finished
@@ -170,7 +170,6 @@ public struct WorldCup26TeamDTO: Codable, Sendable {
         case iso2
     }
 }
-
 
 public struct WorldCup26StadiumsResponse: Codable, Sendable {
     public let stadiums: [WorldCup26StadiumDTO]

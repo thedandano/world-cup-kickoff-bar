@@ -67,7 +67,7 @@ public struct MatchSelectionService: Sendable {
         return matches.contains { $0.status == .finished }
     }
 
-    private func liveSortKey(for match: WorldCupMatch, now: Date) -> Int {
+    private func liveSortKey(for match: WorldCupMatch, now _: Date) -> Int {
         guard case .live(let minute) = match.status else {
             return Int.max
         }

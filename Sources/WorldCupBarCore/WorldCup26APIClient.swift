@@ -19,7 +19,6 @@ public struct WorldCup26APIClient: Sendable {
         try await fetch(path: "get/teams", as: WorldCup26TeamsResponse.self)
     }
 
-
     public func fetchStadiums() async throws -> WorldCup26StadiumsResponse {
         try await fetch(path: "get/stadiums", as: WorldCup26StadiumsResponse.self)
     }

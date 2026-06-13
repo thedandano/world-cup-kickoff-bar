@@ -53,7 +53,7 @@ final class WorldCupMonitoringService: @unchecked Sendable, WorldCupTelemetry, W
         ])
     }
 
-    func recordRefreshFailed(error: Error, latency: Duration?, attemptCount: Int, hasCachedSnapshot: Bool) {
+    func recordRefreshFailed(error: Error, latency _: Duration?, attemptCount: Int, hasCachedSnapshot: Bool) {
         log.error("Refresh failed: attempts=\(attemptCount) has_cache=\(hasCachedSnapshot) error=\(error.localizedDescription)")
         recordUserAction("refresh_failed", properties: [
             "attempts": "\(attemptCount)",

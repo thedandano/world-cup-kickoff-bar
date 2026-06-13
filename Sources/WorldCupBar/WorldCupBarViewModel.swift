@@ -193,7 +193,6 @@ final class WorldCupBarViewModel {
         formatter.matchupTitle(for: match, displayMode: displayMode)
     }
 
-
     func dropdownMatchupTitle(for match: WorldCupMatch) -> String {
         formatter.dropdownMatchupTitle(for: match)
     }

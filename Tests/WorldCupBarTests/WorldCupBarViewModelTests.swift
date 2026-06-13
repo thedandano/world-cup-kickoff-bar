@@ -88,7 +88,7 @@ private struct StubRepository: WorldCupDataProviding {
         cachedSnapshot
     }
 
-    func refreshSnapshot(trigger: RefreshTrigger) async throws -> WorldCupSnapshot {
+    func refreshSnapshot(trigger _: RefreshTrigger) async throws -> WorldCupSnapshot {
         if let refreshError {
             throw refreshError
         }
@@ -99,7 +99,7 @@ private struct StubRepository: WorldCupDataProviding {
 @MainActor
 private final class StubNotificationScheduler: NotificationScheduling {
     func requestPermission() async {}
-    func schedule(matches: [WorldCupMatch], followedCodes: Set<String>, minutesBefore: Int) async {}
+    func schedule(matches _: [WorldCupMatch], followedCodes _: Set<String>, minutesBefore _: Int) async {}
     func cancelAll() {}
 }
 

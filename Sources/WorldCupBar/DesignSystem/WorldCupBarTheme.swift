@@ -35,15 +35,15 @@ enum WCBRadius {
 
 // MARK: - Opacity tokens
 enum WCBOpacity {
-    static let disabled:   Double = 0.38
-    static let secondary:  Double = 0.55
+    static let disabled: Double = 0.38
+    static let secondary: Double = 0.55
     static let cardBorder: Double = 0.10
 }
 
 // MARK: - Typography tokens
 enum WCBFont {
-    static let cardTitle:  Font = .system(size: 14, weight: .semibold)
+    static let cardTitle: Font = .system(size: 14, weight: .semibold)
     static let rowPrimary: Font = .system(size: 14, weight: .medium)
-    static let caption:    Font = .system(size: 12)
-    static let codeMono:   Font = .system(size: 11, weight: .medium, design: .monospaced)
+    static let caption: Font = .system(size: 12)
+    static let codeMono: Font = .system(size: 11, weight: .medium, design: .monospaced)
 }

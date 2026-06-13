@@ -3,7 +3,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var rightClickMonitor: Any?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         // Local monitor: catches events delivered to OUR app (global monitors
         // explicitly skip own-app events, which is why right-clicks on our
         // own status bar button were never seen). Returning nil consumes the
@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
+    func applicationWillTerminate(_: Notification) {
         if let monitor = rightClickMonitor {
             NSEvent.removeMonitor(monitor)
         }
@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Returns true if the event was consumed (right-click on our menu bar strip).
     @discardableResult
-    private func handleRightClick(_ event: NSEvent) -> Bool {
+    private func handleRightClick(_: NSEvent) -> Bool {
         let mouse = NSEvent.mouseLocation
 
         let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main
