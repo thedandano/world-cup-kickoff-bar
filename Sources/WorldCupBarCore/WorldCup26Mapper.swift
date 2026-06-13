@@ -96,10 +96,10 @@ public struct WorldCup26Mapper: Sendable {
         if let minute = Int(elapsed) {
             return .live(minute: minute)
         }
-        // API returns "live" or "ht" without a specific minute — derive from kickoff.
+        // API sometimes returns only "live" or "ht" without a reliable minute.
+        // Preserve that uncertainty instead of showing a guessed clock.
         if elapsed == "live" || elapsed == "ht" {
-            let elapsedMinutes = Int(Date.now.timeIntervalSince(kickoffDate) / 60)
-            return .live(minute: max(1, min(elapsedMinutes, 120)))
+            return .live(minute: nil)
         }
         return .scheduled
     }

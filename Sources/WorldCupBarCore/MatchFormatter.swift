@@ -49,7 +49,10 @@ public struct MatchFormatter: Sendable {
         case .scheduled:
             return localTime(for: match.kickoffDate)
         case .live(let minute):
-            return "Live \(minute)'"
+            if let minute {
+                return "Live \(minute)'"
+            }
+            return "LIVE"
         case .finished:
             return "Final"
         }

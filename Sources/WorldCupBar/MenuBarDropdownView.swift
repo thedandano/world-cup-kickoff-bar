@@ -7,7 +7,7 @@ struct MenuBarDropdownView: View {
     @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: WCBSpacing.md) {
             toolbarSection
             highlightedMatchSection
 
@@ -22,7 +22,8 @@ struct MenuBarDropdownView: View {
             upcomingMatchesSection
             footerSection
         }
-        .padding(16)
+        .padding(.horizontal, WCBSpacing.md)
+        .padding(.vertical, 14)
         .background(VisualEffectBackground().ignoresSafeArea())
     }
 
@@ -42,6 +43,7 @@ struct MenuBarDropdownView: View {
                             : .default,
                         value: viewModel.isRefreshing
                     )
+                    .foregroundStyle(WCBColor.accent)
             }
             .buttonStyle(.borderless)
             .help("Refresh live data")
@@ -56,56 +58,70 @@ struct MenuBarDropdownView: View {
             } label: {
                 Image(systemName: "gearshape")
                     .imageScale(.medium)
+                    .foregroundStyle(WCBColor.accent)
             }
             .buttonStyle(.borderless)
             .help("Settings")
             .accessibilityLabel("Settings")
         }
+        .padding(.horizontal, 2)
     }
 
     private var highlightedMatchSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(highlightTitle)
-                    .font(.system(size: 17, weight: .semibold))
-                    .monospacedDigit()
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center) {
+                LiveRail(text: railTitle, isLive: highlightedMatchIsLive)
 
                 Spacer()
 
-                if let match = viewModel.highlightedMatch {
-                    StatusPill(text: viewModel.statusLine(for: match), isLive: match.status.isLive)
-                }
+                Text(railDetail)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(WCBColor.secondaryLabel)
+                    .lineLimit(1)
             }
 
-            Text(highlightSubtitle)
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.primary.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+            if let match = viewModel.highlightedMatch {
+                HeroMatchRow(
+                    match: match,
+                    centerText: centerStatusText(for: match),
+                    showLivePill: match.status.isLive
                 )
-        )
+            } else {
+                Text(highlightSubtitle)
+                    .font(WCBFont.caption)
+                    .foregroundStyle(WCBColor.secondaryLabel)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(panelBackground)
     }
 
     private var searchField: some View {
-        TextField("Search matches or countries", text: $viewModel.searchText)
-            .textFieldStyle(.roundedBorder)
-            .font(.system(size: 13))
+        HStack(spacing: WCBSpacing.sm) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(WCBColor.secondaryLabel)
+                .imageScale(.small)
+
+            TextField("Search matches or countries", text: $viewModel.searchText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(panelBackground)
     }
 
     private var followedCountriesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
             SectionHeader(title: "Following")
 
             if viewModel.followedCountries.isEmpty {
                 Text(viewModel.availableCountries.isEmpty ? "Team list is loading." : "Not following anyone. Add teams in Settings.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .font(WCBFont.caption)
+                    .foregroundStyle(WCBColor.secondaryLabel)
+                    .padding(.horizontal, 2)
             } else {
                 FlowLayout(spacing: 6) {
                     ForEach(viewModel.followedCountries) { country in
@@ -117,13 +133,13 @@ struct MenuBarDropdownView: View {
     }
 
     private var upcomingMatchesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
             SectionHeader(title: "Upcoming")
 
             if viewModel.upcomingMatches.isEmpty {
                 Text(upcomingEmptyStateText)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .font(WCBFont.caption)
+                    .foregroundStyle(WCBColor.secondaryLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)
             } else {
@@ -137,9 +153,13 @@ struct MenuBarDropdownView: View {
 
                         if match.id != viewModel.upcomingMatches.prefix(5).last?.id {
                             Divider()
+                                .overlay(WCBColor.separator)
                         }
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(panelBackground)
             }
         }
     }
@@ -150,7 +170,7 @@ struct MenuBarDropdownView: View {
 
             Text(viewModel.footerStatusText)
                 .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WCBColor.secondaryLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -192,6 +212,35 @@ struct MenuBarDropdownView: View {
         }
     }
 
+    private var highlightedMatchIsLive: Bool {
+        viewModel.highlightedMatch?.status.isLive == true
+    }
+
+    private var railTitle: String {
+        switch viewModel.contentState {
+        case .content(.live):
+            return "Live now"
+        case .content(.upcoming):
+            return "Up next"
+        case .loading:
+            return "Loading"
+        case .unavailable:
+            return "Offline"
+        case .postTournament:
+            return "2026 complete"
+        case .content(.empty):
+            return "World Cup"
+        }
+    }
+
+    private var railDetail: String {
+        guard let match = viewModel.highlightedMatch else {
+            return ""
+        }
+
+        return match.venue
+    }
+
     private var upcomingEmptyStateText: String {
         switch viewModel.contentState {
         case .postTournament:
@@ -215,6 +264,47 @@ struct MenuBarDropdownView: View {
             "\(match.home.hasRenderableFlag ? match.home.flagEmoji : match.home.code) \(score.home)-\(score.away) \(match.away.hasRenderableFlag ? match.away.flagEmoji : match.away.code)"
         }
     }
+
+    private func centerStatusText(for match: WorldCupMatch) -> String {
+        switch match.status {
+        case .live(let minute):
+            if let minute {
+                return "\(minute)'"
+            }
+            return "LIVE"
+        case .scheduled:
+            return viewModel.localTime(for: match.kickoffDate)
+        case .finished:
+            return "Final"
+        }
+    }
+
+    private var panelBackground: some View {
+        RoundedRectangle(cornerRadius: WCBRadius.lg)
+            .fill(WCBColor.controlBackground.opacity(0.72))
+            .overlay(
+                RoundedRectangle(cornerRadius: WCBRadius.lg)
+                    .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
+            )
+    }
+}
+
+private struct LiveRail: View {
+    let text: String
+    let isLive: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(isLive ? Color.green : WCBColor.accent)
+                .frame(width: 8, height: 8)
+
+            Text(text.uppercased())
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(isLive ? Color.green : WCBColor.secondaryLabel)
+                .tracking(0.3)
+        }
+    }
 }
 
 private struct SectionHeader: View {
@@ -223,7 +313,8 @@ private struct SectionHeader: View {
     var body: some View {
         Text(title.uppercased())
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(WCBColor.secondaryLabel)
+            .padding(.horizontal, 2)
     }
 }
 
@@ -235,12 +326,12 @@ private struct StatusPill: View {
         Text(text)
             .font(.system(size: 11, weight: .semibold))
             .monospacedDigit()
-            .foregroundStyle(isLive ? Color.green : Color.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .foregroundStyle(isLive ? Color.green : WCBColor.secondaryLabel)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(isLive ? Color.green.opacity(0.12) : Color.secondary.opacity(0.10))
+                    .fill(isLive ? Color.green.opacity(0.13) : WCBColor.controlBackground)
             )
     }
 }
@@ -257,14 +348,14 @@ private struct CountryChip: View {
                 .fontWeight(.semibold)
         }
         .font(.system(size: 12))
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 9)
         .padding(.vertical, 5)
         .background(
             Capsule()
-                .fill(Color.primary.opacity(0.06))
+                .fill(WCBColor.controlBackground.opacity(0.8))
                 .overlay(
                     Capsule()
-                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
+                        .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
                 )
         )
     }
@@ -284,18 +375,91 @@ private struct MatchRow: View {
                     .truncationMode(.tail)
 
                 Text(match.venue)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(WCBFont.codeMono)
+                    .foregroundStyle(WCBColor.secondaryLabel)
                     .lineLimit(1)
             }
 
             Spacer(minLength: 12)
 
-            Text(time)
-                .font(.system(size: 12, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(time)
+                    .font(.system(size: 12, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(WCBColor.label)
+
+                Text(match.status == .scheduled ? "Local" : "")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(WCBColor.secondaryLabel)
+            }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 9)
+    }
+}
+
+private struct HeroMatchRow: View {
+    let match: WorldCupMatch
+    let centerText: String
+    let showLivePill: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 18) {
+            teamColumn(country: match.home, alignment: .leading)
+
+            VStack(spacing: 6) {
+                Text(scoreText)
+                    .font(.system(size: 28, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(showLivePill ? Color.green : WCBColor.label)
+
+                Text(centerText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(showLivePill ? Color.green : WCBColor.secondaryLabel)
+                    .monospacedDigit()
+            }
+            .frame(minWidth: 88)
+
+            teamColumn(country: match.away, alignment: .trailing)
+        }
+    }
+
+    private var scoreText: String {
+        guard let score = match.score else {
+            return "-  -"
+        }
+        return "\(score.home) - \(score.away)"
+    }
+
+    @ViewBuilder
+    private func teamColumn(country: Country, alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: 6) {
+            HStack(spacing: 10) {
+                if alignment == .trailing {
+                    Text(country.code)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(WCBColor.label)
+
+                    if country.hasRenderableFlag {
+                        Text(country.flagEmoji)
+                            .font(.system(size: 32))
+                    }
+                } else {
+                    if country.hasRenderableFlag {
+                        Text(country.flagEmoji)
+                            .font(.system(size: 32))
+                    }
+
+                    Text(country.code)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(WCBColor.label)
+                }
+            }
+
+            Text(country.name)
+                .font(.system(size: 12))
+                .foregroundStyle(WCBColor.secondaryLabel)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
     }
 }

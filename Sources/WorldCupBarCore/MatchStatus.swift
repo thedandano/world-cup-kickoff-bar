@@ -1,6 +1,6 @@
 public enum MatchStatus: Codable, Equatable, Sendable {
     case scheduled
-    case live(minute: Int)
+    case live(minute: Int?)
     case finished
 
     public var isLive: Bool {

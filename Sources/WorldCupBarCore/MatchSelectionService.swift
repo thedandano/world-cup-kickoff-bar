@@ -73,6 +73,6 @@ public struct MatchSelectionService: Sendable {
         }
 
         let expectedFullTimeMinute = 90
-        return abs(expectedFullTimeMinute - minute)
+        return abs(expectedFullTimeMinute - (minute ?? 45))
     }
 }
