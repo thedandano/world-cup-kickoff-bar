@@ -11,15 +11,11 @@ struct MenuBarDropdownView: View {
             toolbarSection
             highlightedMatchSection
 
-            if viewModel.contentState != .postTournament {
-                searchField
-            }
+            upcomingMatchesSection
 
             if !viewModel.availableCountries.isEmpty || !viewModel.followedCountries.isEmpty {
                 followedCountriesSection
             }
-
-            upcomingMatchesSection
             footerSection
         }
         .padding(.horizontal, WCBSpacing.md)
@@ -95,21 +91,6 @@ struct MenuBarDropdownView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .background(panelBackground)
-    }
-
-    private var searchField: some View {
-        HStack(spacing: WCBSpacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(WCBColor.secondaryLabel)
-                .imageScale(.small)
-
-            TextField("Search matches or countries", text: $viewModel.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
         .background(panelBackground)
     }
 

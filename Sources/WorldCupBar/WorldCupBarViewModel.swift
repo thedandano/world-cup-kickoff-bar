@@ -37,7 +37,6 @@ final class WorldCupBarViewModel {
             Task { await scheduleNotifications() }
         }
     }
-    var searchText = ""
     var lastUpdated: Date?
     private(set) var refreshState: RefreshState = .idle
 
@@ -80,22 +79,9 @@ final class WorldCupBarViewModel {
     }
 
     var upcomingMatches: [WorldCupMatch] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let futureMatches = matches
+        matches
             .filter { $0.status == .scheduled }
             .sorted { $0.kickoffDate < $1.kickoffDate }
-
-        guard !query.isEmpty else {
-            return futureMatches
-        }
-
-        return futureMatches.filter { match in
-            match.home.name.lowercased().contains(query)
-                || match.away.name.lowercased().contains(query)
-                || match.home.code.lowercased().contains(query)
-                || match.away.code.lowercased().contains(query)
-                || match.venue.lowercased().contains(query)
-        }
     }
 
     var footerStatusText: String {
