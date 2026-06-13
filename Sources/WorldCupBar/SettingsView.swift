@@ -307,6 +307,7 @@ private struct SettingsCard<Content: View>: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(WCBFont.cardTitle)
+                    .foregroundStyle(WCBColor.label)
                 Text(subtitle)
                     .font(WCBFont.caption)
                     .foregroundStyle(.secondary)
