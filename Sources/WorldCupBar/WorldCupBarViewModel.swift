@@ -128,7 +128,9 @@ final class WorldCupBarViewModel {
 
         hasStarted = true
 
-        if let cachedSnapshot = try? repository.loadCachedSnapshot() {
+        if let cachedSnapshot = await Task.detached(priority: .userInitiated) { [repository] in
+            try? repository.loadCachedSnapshot()
+        }.value {
             apply(snapshot: cachedSnapshot)
             refreshState = .usingCachedData("Using cached match data until live refresh completes.")
         }

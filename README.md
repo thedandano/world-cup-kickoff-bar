@@ -10,6 +10,8 @@
   ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
   ![Platform](https://img.shields.io/badge/platform-menu%20bar-purple?style=flat-square)
 
+  [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-yellow?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/thedandano)
+
   Live scores. Upcoming fixtures. Kickoff alerts.  
   All from your menu bar — no browser required.
 
@@ -29,11 +31,10 @@ Built with Swift 5.9, SwiftUI, and the `@Observable` macro. No Electron. No brow
 
 - **Live score in the menu bar** — team codes or flag emoji, your choice
 - **Follow your teams** — followed matches get priority in the display and dropdown
-- **Upcoming fixtures** — next 5 matches with venue, local kickoff time, and a search filter
+- **Upcoming fixtures** — next 5 matches with venue and local kickoff time (Today / Tomorrow / weekday)
 - **Kickoff notifications** — configurable lead time: Off / 5 / 15 / 30 / 60 minutes before kickoff
 - **Smart polling** — 30 s during live matches, 5 min otherwise; change-detection skips redundant UI updates
 - **Offline resilience** — last snapshot cached to disk, shown immediately on next launch
-- **Auto-updates via Sparkle** — stay current without visiting a website
 - **Privacy-first analytics** — powered by TelemetryDeck, fully opt-out in Settings
 
 ---
