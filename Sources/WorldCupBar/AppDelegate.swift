@@ -4,9 +4,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var rightClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Global monitors run on the main thread, so no dispatch needed.
-        rightClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
-            self?.handleRightClick(event)
+        // Local monitor: catches events delivered to OUR app (global monitors
+        // explicitly skip own-app events, which is why right-clicks on our
+        // own status bar button were never seen). Returning nil consumes the
+        // event so the system "Remove from Menu Bar" menu doesn't also appear.
+        rightClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
+            guard let self, self.handleRightClick(event) else { return event }
+            return nil
         }
     }
 
@@ -16,14 +20,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func handleRightClick(_ event: NSEvent) {
+    // Returns true if the event was consumed (right-click on our menu bar strip).
+    @discardableResult
+    private func handleRightClick(_ event: NSEvent) -> Bool {
         let mouse = NSEvent.mouseLocation
 
-        // Only act when the right-click lands in the menu bar strip.
         let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main
-        guard let screen else { return }
+        guard let screen else { return false }
         let menuBarMinY = screen.frame.maxY - NSStatusBar.system.thickness
-        guard mouse.y >= menuBarMinY else { return }
+        guard mouse.y >= menuBarMinY else { return false }
 
         let menu = NSMenu()
 
@@ -46,8 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quitItem.keyEquivalentModifierMask = .command
         menu.addItem(quitItem)
 
-        // nil view → location is in screen coordinates.
+        // nil view → at is interpreted as screen coordinates.
         menu.popUp(positioning: nil, at: mouse, in: nil)
+        return true
     }
 
     @objc private func openSettings() {
