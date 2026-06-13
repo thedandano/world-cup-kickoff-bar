@@ -53,6 +53,49 @@ import Testing
     #expect(snapshot.matches[1].status == .scheduled)
 }
 
+// Regression: API returns "live" for in-progress matches instead of a minute
+// integer. Mapper must not fall through to .scheduled.
+@Test func mapperRecognisesLiveStringAsLiveStatus() throws {
+    let mapper = WorldCup26Mapper(
+        fallbackTimeZone: TimeZone(secondsFromGMT: 0)!,
+        locale: Locale(identifier: "en_US_POSIX")
+    )
+
+    // Use a kickoff date 30 minutes ago so the derived minute is ~30.
+    let kickoffDate = Date.now.addingTimeInterval(-30 * 60)
+    let dateString: String = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(secondsFromGMT: 0)!
+        f.dateFormat = "MM/dd/yyyy HH:mm"
+        return f.string(from: kickoffDate)
+    }()
+
+    let game = WorldCup26GameDTO(
+        id: "99",
+        homeTeamID: "13",
+        awayTeamID: "14",
+        homeScore: "2",
+        awayScore: "0",
+        localDate: dateString,
+        finished: "FALSE",
+        timeElapsed: "live",
+        stadiumID: "1"
+    )
+    let countryByID: [String: Country] = [
+        "13": Country.from(code: "USA", name: "United States", isoCode: "US"),
+        "14": Country.from(code: "PAR", name: "Paraguay", isoCode: "PY")
+    ]
+
+    let match = try mapper.mapMatch(game, countryByID: countryByID)
+    if case .live(let minute) = match.status {
+        #expect(minute >= 1)
+        #expect(minute <= 120)
+    } else {
+        Issue.record("Expected .live status but got \(match.status)")
+    }
+}
+
 @Test func mapperThrowsForUnknownTeam() {
     let mapper = WorldCup26Mapper()
     let game = WorldCup26GameDTO(

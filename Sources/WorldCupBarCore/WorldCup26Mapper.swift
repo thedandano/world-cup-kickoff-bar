@@ -68,7 +68,7 @@ public struct WorldCup26Mapper: Sendable {
             home: home,
             away: away,
             kickoffDate: kickoffDate,
-            status: status(for: game),
+            status: status(for: game, kickoffDate: kickoffDate),
             score: score(for: game),
             venue: cityByStadiumID[game.stadiumID] ?? game.stadiumID
         )
@@ -85,7 +85,7 @@ public struct WorldCup26Mapper: Sendable {
         return MatchScore(home: homeScore, away: awayScore)
     }
 
-    private func status(for game: WorldCup26GameDTO) -> MatchStatus {
+    private func status(for game: WorldCup26GameDTO, kickoffDate: Date) -> MatchStatus {
         let elapsed = game.timeElapsed.lowercased()
         if elapsed == "finished" || game.finished == "TRUE" {
             return .finished
@@ -95,6 +95,11 @@ public struct WorldCup26Mapper: Sendable {
         }
         if let minute = Int(elapsed) {
             return .live(minute: minute)
+        }
+        // API returns "live" or "ht" without a specific minute — derive from kickoff.
+        if elapsed == "live" || elapsed == "ht" {
+            let elapsedMinutes = Int(Date.now.timeIntervalSince(kickoffDate) / 60)
+            return .live(minute: max(1, min(elapsedMinutes, 120)))
         }
         return .scheduled
     }
