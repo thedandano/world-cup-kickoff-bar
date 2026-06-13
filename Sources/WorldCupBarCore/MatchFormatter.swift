@@ -2,6 +2,7 @@ import Foundation
 
 public struct MatchFormatter: Sendable {
     private let timeFormatter: DateFormatter
+    private let weekdayFormatter: DateFormatter
 
     public init(timeZone: TimeZone = .current, locale: Locale = .current) {
         let timeFormatter = DateFormatter()
@@ -10,6 +11,12 @@ public struct MatchFormatter: Sendable {
         timeFormatter.dateStyle = .none
         timeFormatter.timeStyle = .short
         self.timeFormatter = timeFormatter
+
+        let weekdayFormatter = DateFormatter()
+        weekdayFormatter.locale = locale
+        weekdayFormatter.timeZone = timeZone
+        weekdayFormatter.dateFormat = "EEE"
+        self.weekdayFormatter = weekdayFormatter
     }
 
     public func menuBarTitle(for state: MatchDisplayState, displayMode: DisplayMode) -> String {
@@ -44,10 +51,17 @@ public struct MatchFormatter: Sendable {
         timeFormatter.string(from: date)
     }
 
+    public func scheduledTime(for date: Date, calendar: Calendar = .current) -> String {
+        let time = localTime(for: date)
+        if calendar.isDateInToday(date) { return "Today \(time)" }
+        if calendar.isDateInTomorrow(date) { return "Tomorrow \(time)" }
+        return "\(weekdayFormatter.string(from: date)) \(time)"
+    }
+
     public func statusLine(for match: WorldCupMatch) -> String {
         switch match.status {
         case .scheduled:
-            return localTime(for: match.kickoffDate)
+            return scheduledTime(for: match.kickoffDate)
         case .live(let minute):
             if let minute {
                 return "Live \(minute)'"

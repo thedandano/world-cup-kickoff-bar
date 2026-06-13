@@ -35,7 +35,7 @@ struct WorldCupBarApp: App {
     var body: some Scene {
         MenuBarExtra {
             MenuBarDropdownView(viewModel: viewModel)
-                .frame(width: 360)
+                .frame(width: 400)
                 .tint(WCBColor.accent)
                 .task {
                     await NotificationScheduler.shared.requestPermission()

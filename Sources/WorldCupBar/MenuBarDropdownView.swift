@@ -148,7 +148,7 @@ struct MenuBarDropdownView: View {
                         MatchRow(
                             match: match,
                             title: viewModel.dropdownMatchupTitle(for: match),
-                            time: viewModel.localTime(for: match.kickoffDate)
+                            time: viewModel.scheduledTime(for: match.kickoffDate)
                         )
 
                         if match.id != viewModel.upcomingMatches.prefix(5).last?.id {
@@ -273,7 +273,7 @@ struct MenuBarDropdownView: View {
             }
             return "LIVE"
         case .scheduled:
-            return viewModel.localTime(for: match.kickoffDate)
+            return viewModel.scheduledTime(for: match.kickoffDate)
         case .finished:
             return "Final"
         }
@@ -417,7 +417,7 @@ private struct HeroMatchRow: View {
                     .foregroundStyle(showLivePill ? Color.green : WCBColor.secondaryLabel)
                     .monospacedDigit()
             }
-            .frame(minWidth: 88)
+            .frame(minWidth: 140)
 
             teamColumn(country: match.away, alignment: .trailing)
         }

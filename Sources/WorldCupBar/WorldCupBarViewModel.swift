@@ -214,6 +214,10 @@ final class WorldCupBarViewModel {
         formatter.localTime(for: date)
     }
 
+    func scheduledTime(for date: Date) -> String {
+        formatter.scheduledTime(for: date)
+    }
+
     func statusLine(for match: WorldCupMatch) -> String {
         formatter.statusLine(for: match)
     }
