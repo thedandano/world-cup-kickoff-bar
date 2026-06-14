@@ -45,16 +45,19 @@ final class WorldCupMonitoringService: @unchecked Sendable, WorldCupTelemetry, W
     }
 
     func recordRefreshSucceeded(snapshot: WorldCupSnapshot, latency: Duration, attemptCount: Int) {
-        log.info("Refresh succeeded: attempts=\(attemptCount) matches=\(snapshot.matches.count) latency_ms=\(latency.inMilliseconds)")
+        let matchCount = snapshot.matches.count
+        let latencyMs = latency.inMilliseconds
+        log.info("Refresh succeeded: attempts=\(attemptCount) matches=\(matchCount) latency_ms=\(latencyMs)")
         recordUserAction("refresh_succeeded", properties: [
             "attempts": "\(attemptCount)",
-            "matches": "\(snapshot.matches.count)",
-            "latency_ms": "\(latency.inMilliseconds)"
+            "matches": "\(matchCount)",
+            "latency_ms": "\(latencyMs)"
         ])
     }
 
     func recordRefreshFailed(error: Error, latency _: Duration?, attemptCount: Int, hasCachedSnapshot: Bool) {
-        log.error("Refresh failed: attempts=\(attemptCount) has_cache=\(hasCachedSnapshot) error=\(error.localizedDescription)")
+        let reason = error.localizedDescription
+        log.error("Refresh failed: attempts=\(attemptCount) has_cache=\(hasCachedSnapshot) error=\(reason)")
         recordUserAction("refresh_failed", properties: [
             "attempts": "\(attemptCount)",
             "has_cache": hasCachedSnapshot ? "true" : "false"

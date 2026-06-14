@@ -84,7 +84,7 @@ private struct DisplayPanel: View {
 
     private var displayModeCard: some View {
         SettingsCard {
-            HStack(alignment: .center, spacing: WCBSpacing.lg) {
+            HStack(alignment: .center, spacing: WCBSpacing.large) {
                 cardLabel("Display mode", "Show team codes or flag emoji.")
                 Spacer()
                 Picker("Display mode", selection: $viewModel.displayMode) {
@@ -97,13 +97,13 @@ private struct DisplayPanel: View {
                 .frame(width: 250)
                 .help("Controls whether compact match labels use team codes or flags.")
             }
-            .padding(WCBSpacing.md)
+            .padding(WCBSpacing.medium)
         }
     }
 
     private var separatorCard: some View {
         SettingsCard {
-            HStack(alignment: .center, spacing: WCBSpacing.lg) {
+            HStack(alignment: .center, spacing: WCBSpacing.large) {
                 cardLabel("Match separator", "The \u{201C}vs\u{201D} mark shown between teams.")
                 Spacer()
                 VSMark(style: viewModel.vsMarkStyle, size: 24)
@@ -120,13 +120,13 @@ private struct DisplayPanel: View {
                 .frame(width: 250)
                 .help("Choose the mark drawn between the two teams.")
             }
-            .padding(WCBSpacing.md)
+            .padding(WCBSpacing.medium)
         }
     }
 
     @ViewBuilder
     private func cardLabel(_ title: String, _ subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: WCBSpacing.xs) {
+        VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
             Text(title)
                 .font(WCBFont.rowPrimary)
             Text(subtitle)
@@ -150,58 +150,73 @@ private struct FollowingPanel: View {
 
     var body: some View {
         PanelScrollView(title: "Following", subtitle: "Teams you follow get priority in the menu bar.") {
-            SettingsCard {
-                if viewModel.availableCountries.isEmpty {
-                    Text("Team list will appear after the first live refresh.")
-                        .font(WCBFont.caption)
+            followingCard
+        }
+    }
+
+    @ViewBuilder
+    private var followingCard: some View {
+        SettingsCard {
+            followingCardContent
+        }
+    }
+
+    @ViewBuilder
+    private var followingCardContent: some View {
+        if viewModel.availableCountries.isEmpty {
+            Text("Team list will appear after the first live refresh.")
+                .font(WCBFont.caption)
+                .foregroundStyle(.secondary)
+                .padding(WCBSpacing.medium)
+        } else {
+            searchBar
+            Divider()
+            countryList
+            Divider()
+            Text("Live followed matches appear before upcoming matches.")
+                .font(WCBFont.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, WCBSpacing.medium)
+                .padding(.vertical, 12)
+        }
+    }
+
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search countries", text: $search)
+                .textFieldStyle(.plain)
+            if !search.isEmpty {
+                Button { search = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
-                        .padding(WCBSpacing.md)
-                } else {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
-                        TextField("Search countries", text: $search)
-                            .textFieldStyle(.plain)
-                        if !search.isEmpty {
-                            Button { search = "" } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                    }
-                    .padding(.horizontal, WCBSpacing.md)
-                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .padding(.horizontal, WCBSpacing.medium)
+        .padding(.vertical, 10)
+    }
 
-                    Divider()
-
-                    if filtered.isEmpty {
-                        Text("No countries match \"\(search)\".")
-                            .font(WCBFont.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(WCBSpacing.md)
-                    } else {
-                        ForEach(filtered) { country in
-                            CountrySettingsRow(
-                                country: country,
-                                isFollowed: Binding(
-                                    get: { viewModel.followedCountryCodes.contains(country.code) },
-                                    set: { viewModel.setFollowed(country, isFollowed: $0) }
-                                )
-                            )
-                            if country.id != filtered.last?.id {
-                                Divider().padding(.leading, 46)
-                            }
-                        }
-                    }
-
-                    Divider()
-
-                    Text("Live followed matches appear before upcoming matches.")
-                        .font(WCBFont.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, WCBSpacing.md)
-                        .padding(.vertical, 12)
+    @ViewBuilder
+    private var countryList: some View {
+        if filtered.isEmpty {
+            Text("No countries match \"\(search)\".")
+                .font(WCBFont.caption)
+                .foregroundStyle(.secondary)
+                .padding(WCBSpacing.medium)
+        } else {
+            ForEach(filtered) { country in
+                CountrySettingsRow(
+                    country: country,
+                    isFollowed: Binding(
+                        get: { viewModel.followedCountryCodes.contains(country.code) },
+                        set: { viewModel.setFollowed(country, isFollowed: $0) }
+                    )
+                )
+                if country.id != filtered.last?.id {
+                    Divider().padding(.leading, 46)
                 }
             }
         }
@@ -213,30 +228,38 @@ private struct NotificationsPanel: View {
 
     var body: some View {
         PanelScrollView(title: "Notifications", subtitle: "Get notified before followed matches kick off.") {
-            SettingsCard {
-                HStack(spacing: WCBSpacing.md) {
-                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
-                        Text("Alert timing")
-                            .font(WCBFont.rowPrimary)
-                        Text("Notify before a followed match starts.")
-                            .font(WCBFont.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Picker("Alert timing", selection: $viewModel.notificationMinutesBefore) {
-                        Text("Off").tag(0)
-                        Text("5 min").tag(5)
-                        Text("15 min").tag(15)
-                        Text("30 min").tag(30)
-                        Text("60 min").tag(60)
-                    }
-                    .labelsHidden()
-                    .tint(WCBColor.accent)
-                    .frame(width: 120)
-                }
-                .padding(WCBSpacing.md)
-            }
+            alertTimingCard
         }
+    }
+
+    private var alertTimingCard: some View {
+        SettingsCard {
+            alertTimingRow
+        }
+    }
+
+    private var alertTimingRow: some View {
+        HStack(spacing: WCBSpacing.medium) {
+            VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
+                Text("Alert timing")
+                    .font(WCBFont.rowPrimary)
+                Text("Notify before a followed match starts.")
+                    .font(WCBFont.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Picker("Alert timing", selection: $viewModel.notificationMinutesBefore) {
+                Text("Off").tag(0)
+                Text("5 min").tag(5)
+                Text("15 min").tag(15)
+                Text("30 min").tag(30)
+                Text("60 min").tag(60)
+            }
+            .labelsHidden()
+            .tint(WCBColor.accent)
+            .frame(width: 120)
+        }
+        .padding(WCBSpacing.medium)
     }
 }
 
@@ -246,8 +269,8 @@ private struct AnalyticsPanel: View {
     var body: some View {
         PanelScrollView(title: "Analytics", subtitle: "Control product analytics.") {
             SettingsCard {
-                HStack(spacing: WCBSpacing.md) {
-                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
+                HStack(spacing: WCBSpacing.medium) {
+                    VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
                         Text("Usage analytics")
                             .font(WCBFont.rowPrimary)
                         Text("Turn off product analytics any time.")
@@ -260,7 +283,7 @@ private struct AnalyticsPanel: View {
                         .toggleStyle(.switch)
                         .tint(WCBColor.accent)
                 }
-                .padding(WCBSpacing.md)
+                .padding(WCBSpacing.medium)
             }
         }
     }
@@ -272,43 +295,53 @@ private struct DataPanel: View {
 
     var body: some View {
         PanelScrollView(title: "Data", subtitle: "Refresh match data or check for app updates.") {
-            SettingsCard {
-                HStack(spacing: WCBSpacing.md) {
-                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
-                        Text("Match data")
-                            .font(WCBFont.rowPrimary)
-                        Text(viewModel.footerStatusText)
-                            .font(WCBFont.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button {
-                        Task { await viewModel.refresh() }
-                    } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }
-                }
-                .padding(WCBSpacing.md)
+            dataCard
+        }
+    }
 
-                Divider().padding(.leading, WCBSpacing.md)
+    private var dataCard: some View {
+        SettingsCard {
+            matchDataRow
+            Divider().padding(.leading, WCBSpacing.medium)
+            appUpdatesRow
+        }
+    }
 
-                HStack(spacing: WCBSpacing.md) {
-                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
-                        Text("App updates")
-                            .font(WCBFont.rowPrimary)
-                        Text("Check for a new version of World Cup Bar.")
-                            .font(WCBFont.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Check for Updates") {
-                        updaterViewModel.checkForUpdates()
-                    }
-                    .disabled(!updaterViewModel.canCheckForUpdates)
-                }
-                .padding(WCBSpacing.md)
+    private var matchDataRow: some View {
+        HStack(spacing: WCBSpacing.medium) {
+            VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
+                Text("Match data")
+                    .font(WCBFont.rowPrimary)
+                Text(viewModel.footerStatusText)
+                    .font(WCBFont.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button {
+                Task { await viewModel.refresh() }
+            } label: {
+                Label("Refresh", systemImage: "arrow.clockwise")
             }
         }
+        .padding(WCBSpacing.medium)
+    }
+
+    private var appUpdatesRow: some View {
+        HStack(spacing: WCBSpacing.medium) {
+            VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
+                Text("App updates")
+                    .font(WCBFont.rowPrimary)
+                Text("Check for a new version of World Cup Bar.")
+                    .font(WCBFont.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Check for Updates") {
+                updaterViewModel.checkForUpdates()
+            }
+            .disabled(!updaterViewModel.canCheckForUpdates)
+        }
+        .padding(WCBSpacing.medium)
     }
 }
 
@@ -324,8 +357,8 @@ private struct PanelScrollView<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: WCBSpacing.lg) {
-                VStack(alignment: .leading, spacing: WCBSpacing.xs) {
+            VStack(alignment: .leading, spacing: WCBSpacing.large) {
+                VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
                     Text(title)
                         .font(WCBFont.viewTitle)
                         .foregroundStyle(WCBColor.label)
@@ -335,9 +368,9 @@ private struct PanelScrollView<Content: View>: View {
                 }
                 content
             }
-            .padding(.horizontal, WCBSpacing.lg)
-            .padding(.top, WCBSpacing.xl)
-            .padding(.bottom, WCBSpacing.lg)
+            .padding(.horizontal, WCBSpacing.large)
+            .padding(.top, WCBSpacing.extraLarge)
+            .padding(.bottom, WCBSpacing.large)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -355,10 +388,10 @@ private struct SettingsCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: WCBRadius.md)
+            RoundedRectangle(cornerRadius: WCBRadius.medium)
                 .fill(WCBColor.cardFill)
                 .overlay(
-                    RoundedRectangle(cornerRadius: WCBRadius.md)
+                    RoundedRectangle(cornerRadius: WCBRadius.medium)
                         .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
                 )
         )
@@ -390,7 +423,7 @@ private struct CountrySettingsRow: View {
                 .toggleStyle(.switch)
                 .tint(WCBColor.accent)
         }
-        .padding(.horizontal, WCBSpacing.md)
+        .padding(.horizontal, WCBSpacing.medium)
         .frame(minHeight: 48)
         .frame(maxWidth: .infinity, alignment: .leading)
     }

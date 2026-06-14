@@ -44,17 +44,7 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
 
         do {
             let result = try await retryPolicy.execute(
-                operation: {
-                    async let games = dataSource.fetchGames()
-                    async let teams = dataSource.fetchTeams()
-                    async let stadiums = (try? dataSource.fetchStadiums()) ?? WorldCup26StadiumsResponse(stadiums: [])
-                    return try await mapper.mapSnapshot(
-                        gamesResponse: games,
-                        teamsResponse: teams,
-                        stadiumsResponse: stadiums,
-                        fetchedAt: now()
-                    )
-                },
+                operation: fetchAndMapSnapshot,
                 shouldRetry: shouldRetry(error:)
             )
             let cached = try? store.load()
@@ -84,10 +74,23 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
         }
     }
 
+    private func fetchAndMapSnapshot() async throws -> WorldCupSnapshot {
+        async let games = dataSource.fetchGames()
+        async let teams = dataSource.fetchTeams()
+        async let stadiums = (try? dataSource.fetchStadiums()) ?? WorldCup26StadiumsResponse(stadiums: [])
+        return try await mapper.mapSnapshot(
+            gamesResponse: games,
+            teamsResponse: teams,
+            stadiumsResponse: stadiums,
+            fetchedAt: now()
+        )
+    }
+
     private func shouldRetry(error: Error) -> RetryDirective {
         if let urlError = error as? URLError {
             switch urlError.code {
-            case .timedOut, .cannotFindHost, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet, .dnsLookupFailed:
+            case .timedOut, .cannotFindHost, .cannotConnectToHost,
+                 .networkConnectionLost, .notConnectedToInternet, .dnsLookupFailed:
                 return .retry
             default:
                 return .noRetry

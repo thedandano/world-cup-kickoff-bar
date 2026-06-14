@@ -22,7 +22,11 @@ import WorldCupBarCore
     )
     let repository = StubRepository(cachedSnapshot: snapshot, refreshedSnapshot: snapshot)
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
+    let viewModel = WorldCupBarViewModel(
+        repository: repository,
+        analytics: analytics,
+        notificationScheduler: StubNotificationScheduler()
+    )
 
     await viewModel.start()
 
@@ -34,7 +38,11 @@ import WorldCupBarCore
 @Test func viewModelShowsUnavailableStateWithoutCacheWhenRefreshFails() async {
     let repository = StubRepository(cachedSnapshot: nil, refreshError: URLError(.timedOut))
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
+    let viewModel = WorldCupBarViewModel(
+        repository: repository,
+        analytics: analytics,
+        notificationScheduler: StubNotificationScheduler()
+    )
 
     await viewModel.start()
 
@@ -50,7 +58,11 @@ import WorldCupBarCore
     )
     let repository = StubRepository(cachedSnapshot: cached, refreshError: URLError(.timedOut))
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
+    let viewModel = WorldCupBarViewModel(
+        repository: repository,
+        analytics: analytics,
+        notificationScheduler: StubNotificationScheduler()
+    )
 
     await viewModel.start()
 
@@ -66,7 +78,11 @@ import WorldCupBarCore
 @Test func viewModelAnalyticsOptOutStopsEventRecording() async {
     let repository = StubRepository(cachedSnapshot: nil, refreshedSnapshot: nil)
     let analytics = StubAnalytics()
-    let viewModel = WorldCupBarViewModel(repository: repository, analytics: analytics, notificationScheduler: StubNotificationScheduler())
+    let viewModel = WorldCupBarViewModel(
+        repository: repository,
+        analytics: analytics,
+        notificationScheduler: StubNotificationScheduler()
+    )
 
     await viewModel.start()
     let countBefore = analytics.recorded.count
@@ -85,11 +101,14 @@ import WorldCupBarCore
     let snapshot = WorldCupSnapshot(
         matches: [
             WorldCupMatch(id: "m1", home: .unitedStates, away: .brazil,
-                          kickoffDate: future, status: .scheduled, score: nil, venue: "MetLife Stadium"),
+                          kickoffDate: future,
+                          status: .scheduled, score: nil, venue: "MetLife Stadium"),
             WorldCupMatch(id: "m2", home: .argentina, away: .france,
-                          kickoffDate: future.addingTimeInterval(3600), status: .scheduled, score: nil, venue: "SoFi Stadium"),
+                          kickoffDate: future.addingTimeInterval(3600),
+                          status: .scheduled, score: nil, venue: "SoFi Stadium"),
             WorldCupMatch(id: "m3", home: .germany, away: .japan,
-                          kickoffDate: future.addingTimeInterval(7200), status: .scheduled, score: nil, venue: "Lumen Field")
+                          kickoffDate: future.addingTimeInterval(7200),
+                          status: .scheduled, score: nil, venue: "Lumen Field")
         ],
         countries: Country.previewDefaults,
         fetchedAt: Date(timeIntervalSince1970: 1_800_000_000)

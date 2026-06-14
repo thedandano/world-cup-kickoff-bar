@@ -12,10 +12,14 @@ import Testing
         score: nil,
         venue: "NYC"
     )
-    let a = WorldCupSnapshot(matches: [match], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000))
-    let b = WorldCupSnapshot(matches: [match], countries: [], fetchedAt: Date(timeIntervalSince1970: 2_000))
+    let snapshotWithOldTimestamp = WorldCupSnapshot(
+        matches: [match], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000)
+    )
+    let snapshotWithNewTimestamp = WorldCupSnapshot(
+        matches: [match], countries: [], fetchedAt: Date(timeIntervalSince1970: 2_000)
+    )
 
-    #expect(a.matchesContentEqual(to: b))
+    #expect(snapshotWithOldTimestamp.matchesContentEqual(to: snapshotWithNewTimestamp))
 }
 
 @Test func contentNotEqualWhenScoreChanges() {
@@ -37,14 +41,18 @@ import Testing
         score: MatchScore(home: 1, away: 0),
         venue: "NYC"
     )
-    let a = WorldCupSnapshot(matches: [base], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000))
-    let b = WorldCupSnapshot(matches: [updated], countries: [], fetchedAt: Date(timeIntervalSince1970: 2_000))
+    let snapshotWithBaseMatch = WorldCupSnapshot(
+        matches: [base], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000)
+    )
+    let snapshotWithUpdatedMatch = WorldCupSnapshot(
+        matches: [updated], countries: [], fetchedAt: Date(timeIntervalSince1970: 2_000)
+    )
 
-    #expect(!a.matchesContentEqual(to: b))
+    #expect(!snapshotWithBaseMatch.matchesContentEqual(to: snapshotWithUpdatedMatch))
 }
 
 @Test func contentNotEqualWhenMatchCountDiffers() {
-    let m1 = WorldCupMatch(
+    let usaMexMatch = WorldCupMatch(
         id: "usa-mex",
         home: .unitedStates,
         away: .mexico,
@@ -53,7 +61,7 @@ import Testing
         score: nil,
         venue: "NYC"
     )
-    let m2 = WorldCupMatch(
+    let canadaBrazilMatch = WorldCupMatch(
         id: "can-bra",
         home: .canada,
         away: .brazil,
@@ -62,10 +70,16 @@ import Testing
         score: nil,
         venue: "Toronto"
     )
-    let a = WorldCupSnapshot(matches: [m1], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000))
-    let b = WorldCupSnapshot(matches: [m1, m2], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000))
+    let snapshotWithOneMatch = WorldCupSnapshot(
+        matches: [usaMexMatch], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000)
+    )
+    let snapshotWithTwoMatches = WorldCupSnapshot(
+        matches: [usaMexMatch, canadaBrazilMatch],
+        countries: [],
+        fetchedAt: Date(timeIntervalSince1970: 1_000)
+    )
 
-    #expect(!a.matchesContentEqual(to: b))
+    #expect(!snapshotWithOneMatch.matchesContentEqual(to: snapshotWithTwoMatches))
 }
 
 @Test func contentNotEqualWhenStatusChangesFromScheduledToLive() {
@@ -87,8 +101,12 @@ import Testing
         score: MatchScore(home: 0, away: 0),
         venue: "NYC"
     )
-    let a = WorldCupSnapshot(matches: [scheduled], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000))
-    let b = WorldCupSnapshot(matches: [live], countries: [], fetchedAt: Date(timeIntervalSince1970: 2_000))
+    let scheduledSnapshot = WorldCupSnapshot(
+        matches: [scheduled], countries: [], fetchedAt: Date(timeIntervalSince1970: 1_000)
+    )
+    let liveSnapshot = WorldCupSnapshot(
+        matches: [live], countries: [], fetchedAt: Date(timeIntervalSince1970: 2_000)
+    )
 
-    #expect(!a.matchesContentEqual(to: b))
+    #expect(!scheduledSnapshot.matchesContentEqual(to: liveSnapshot))
 }

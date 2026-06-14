@@ -23,7 +23,10 @@ final class WorldCupBarViewModel {
     var followedCountryCodes: Set<String> {
         didSet {
             defaults.set(Array(followedCountryCodes).sorted(), forKey: UserDefaultsKeys.followedCountryCodes)
-            analytics.recordUserAction("followed_countries_changed", properties: ["count": "\(followedCountryCodes.count)"])
+            analytics.recordUserAction(
+                "followed_countries_changed",
+                properties: ["count": "\(followedCountryCodes.count)"]
+            )
             updateDisplayState()
             Task { await scheduleNotifications() }
         }
@@ -162,35 +165,35 @@ final class WorldCupBarViewModel {
 
         refreshState = .refreshing
         let task = Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            do {
-                let snapshot = try await repository.refreshSnapshot(trigger: trigger)
-                await MainActor.run {
-                    self.apply(snapshot: snapshot)
-                    self.refreshState = .idle
-                    self.restartPolling()
-                }
-            } catch {
-                await MainActor.run {
-                    if self.lastUpdated != nil {
-                        self.refreshState = .usingCachedData("Live refresh failed. Showing the last known snapshot.")
-                    } else {
-                        self.contentState = .unavailable
-                        self.refreshState = .failed("Live data unavailable right now.")
-                    }
-                    self.restartPolling()
-                }
-            }
-
-            await MainActor.run {
-                self.refreshTask = nil
-            }
+            guard let self else { return }
+            await self.performRefresh(trigger: trigger)
         }
         refreshTask = task
         await task.value
+    }
+
+    private func performRefresh(trigger: RefreshTrigger) async {
+        do {
+            let snapshot = try await repository.refreshSnapshot(trigger: trigger)
+            await MainActor.run {
+                self.apply(snapshot: snapshot)
+                self.refreshState = .idle
+                self.restartPolling()
+            }
+        } catch {
+            await MainActor.run {
+                if self.lastUpdated != nil {
+                    self.refreshState = .usingCachedData("Live refresh failed. Showing the last known snapshot.")
+                } else {
+                    self.contentState = .unavailable
+                    self.refreshState = .failed("Live data unavailable right now.")
+                }
+                self.restartPolling()
+            }
+        }
+        await MainActor.run {
+            self.refreshTask = nil
+        }
     }
 
     func setFollowed(_ country: Country, isFollowed: Bool) {

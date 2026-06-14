@@ -2,12 +2,7 @@ import Foundation
 import Testing
 @testable import WorldCupBarCore
 
-@Test func mapperBuildsSnapshotFromGamesAndTeamsResponses() throws {
-    let mapper = WorldCup26Mapper(
-        fallbackTimeZone: TimeZone(secondsFromGMT: 0)!,
-        locale: Locale(identifier: "en_US_POSIX")
-    )
-
+private func makeSnapshotFixtures() -> (games: WorldCup26GamesResponse, teams: WorldCup26TeamsResponse) {
     let games = WorldCup26GamesResponse(games: [
         WorldCup26GameDTO(
             id: "1",
@@ -38,10 +33,19 @@ import Testing
         WorldCup26TeamDTO(id: "5", nameEn: "Canada", fifaCode: "CAN", iso2: "CA"),
         WorldCup26TeamDTO(id: "6", nameEn: "Bosnia and Herzegovina", fifaCode: "BIH", iso2: "BA")
     ])
+    return (games, teams)
+}
+
+@Test func mapperBuildsSnapshotFromGamesAndTeamsResponses() throws {
+    let mapper = WorldCup26Mapper(
+        fallbackTimeZone: TimeZone(secondsFromGMT: 0)!,
+        locale: Locale(identifier: "en_US_POSIX")
+    )
+    let fixtures = makeSnapshotFixtures()
 
     let snapshot = try mapper.mapSnapshot(
-        gamesResponse: games,
-        teamsResponse: teams,
+        gamesResponse: fixtures.games,
+        teamsResponse: fixtures.teams,
         stadiumsResponse: WorldCup26StadiumsResponse(stadiums: []),
         fetchedAt: Date(timeIntervalSince1970: 1_800_000_000)
     )
@@ -90,11 +94,11 @@ import Testing
 
     let kickoffDate = Date.now.addingTimeInterval(-30 * 60)
     let dateString: String = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)!
-        f.dateFormat = "MM/dd/yyyy HH:mm"
-        return f.string(from: kickoffDate)
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(secondsFromGMT: 0)!
+        fmt.dateFormat = "MM/dd/yyyy HH:mm"
+        return fmt.string(from: kickoffDate)
     }()
 
     let game = WorldCup26GameDTO(
@@ -176,7 +180,12 @@ import Testing
         )
     ])
 
-    let snapshot = try mapper.mapSnapshot(gamesResponse: games, teamsResponse: teams, stadiumsResponse: WorldCup26StadiumsResponse(stadiums: []), fetchedAt: Date())
+    let snapshot = try mapper.mapSnapshot(
+        gamesResponse: games,
+        teamsResponse: teams,
+        stadiumsResponse: WorldCup26StadiumsResponse(stadiums: []),
+        fetchedAt: Date()
+    )
 
     #expect(snapshot.matches.count == 1)
     #expect(snapshot.matches[0].id == "1")

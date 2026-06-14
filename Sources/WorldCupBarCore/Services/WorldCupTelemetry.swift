@@ -19,5 +19,10 @@ public struct NoOpWorldCupTelemetry: WorldCupTelemetry {
     public func recordCacheLoaded(matchCount _: Int, teamCount _: Int) {}
     public func recordRefreshStarted(trigger _: RefreshTrigger) {}
     public func recordRefreshSucceeded(snapshot _: WorldCupSnapshot, latency _: Duration, attemptCount _: Int) {}
-    public func recordRefreshFailed(error _: Error, latency _: Duration?, attemptCount _: Int, hasCachedSnapshot _: Bool) {}
+    public func recordRefreshFailed(
+        error _: Error,
+        latency _: Duration?,
+        attemptCount _: Int,
+        hasCachedSnapshot _: Bool
+    ) {}
 }

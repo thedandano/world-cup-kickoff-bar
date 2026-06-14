@@ -8,55 +8,61 @@ struct MenuBarDropdownView: View {
     @State private var selectedTab: MatchListTab = .following
 
     var body: some View {
-        VStack(alignment: .leading, spacing: WCBSpacing.md) {
+        VStack(alignment: .leading, spacing: WCBSpacing.medium) {
             toolbarSection
             highlightedMatchSection
             matchesSection
             footerSection
         }
-        .padding(.horizontal, WCBSpacing.md)
+        .padding(.horizontal, WCBSpacing.medium)
         .padding(.vertical, 14)
         .background(WCBVibrancyBackground().ignoresSafeArea())
     }
 
     private var toolbarSection: some View {
         HStack {
-            Button {
-                Task {
-                    await viewModel.refresh()
-                }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .imageScale(.medium)
-                    .rotationEffect(viewModel.isRefreshing ? .degrees(360) : .degrees(0))
-                    .animation(
-                        viewModel.isRefreshing
-                            ? .linear(duration: 1).repeatForever(autoreverses: false)
-                            : .default,
-                        value: viewModel.isRefreshing
-                    )
-                    .foregroundStyle(WCBColor.accent)
-            }
-            .buttonStyle(.borderless)
-            .help("Refresh live data")
-            .accessibilityLabel("Refresh live data")
-            .disabled(viewModel.isRefreshing)
-
+            refreshButton
             Spacer()
-
-            Button {
-                openWindow(id: "settings")
-                NSApp.activate(ignoringOtherApps: true)
-            } label: {
-                Image(systemName: "gearshape")
-                    .imageScale(.medium)
-                    .foregroundStyle(WCBColor.accent)
-            }
-            .buttonStyle(.borderless)
-            .help("Settings")
-            .accessibilityLabel("Settings")
+            settingsButton
         }
         .padding(.horizontal, 2)
+    }
+
+    private var refreshButton: some View {
+        Button {
+            Task {
+                await viewModel.refresh()
+            }
+        } label: {
+            Image(systemName: "arrow.clockwise")
+                .imageScale(.medium)
+                .rotationEffect(viewModel.isRefreshing ? .degrees(360) : .degrees(0))
+                .animation(
+                    viewModel.isRefreshing
+                        ? .linear(duration: 1).repeatForever(autoreverses: false)
+                        : .default,
+                    value: viewModel.isRefreshing
+                )
+                .foregroundStyle(WCBColor.accent)
+        }
+        .buttonStyle(.borderless)
+        .help("Refresh live data")
+        .accessibilityLabel("Refresh live data")
+        .disabled(viewModel.isRefreshing)
+    }
+
+    private var settingsButton: some View {
+        Button {
+            openWindow(id: "settings")
+            NSApp.activate(ignoringOtherApps: true)
+        } label: {
+            Image(systemName: "gearshape")
+                .imageScale(.medium)
+                .foregroundStyle(WCBColor.accent)
+        }
+        .buttonStyle(.borderless)
+        .help("Settings")
+        .accessibilityLabel("Settings")
     }
 
     private var highlightedMatchSection: some View {
@@ -111,7 +117,7 @@ struct MenuBarDropdownView: View {
     }
 
     private var matchesSection: some View {
-        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
+        VStack(alignment: .leading, spacing: WCBSpacing.small) {
             Picker("Match list", selection: $selectedTab) {
                 ForEach(MatchListTab.allCases) { tab in
                     Text(tab.title).tag(tab)
@@ -178,7 +184,20 @@ struct MenuBarDropdownView: View {
         }
     }
 
-    private var highlightTitle: String {
+    private var panelBackground: some View {
+        RoundedRectangle(cornerRadius: WCBRadius.large)
+            .fill(WCBColor.cardFill)
+            .overlay(
+                RoundedRectangle(cornerRadius: WCBRadius.large)
+                    .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
+            )
+    }
+}
+
+// MARK: - Text helpers
+
+private extension MenuBarDropdownView {
+    var highlightTitle: String {
         switch viewModel.contentState {
         case .loading:
             return "Loading World Cup"
@@ -198,7 +217,7 @@ struct MenuBarDropdownView: View {
         }
     }
 
-    private var highlightSubtitle: String {
+    var highlightSubtitle: String {
         switch viewModel.contentState {
         case .loading:
             return "Loading the latest World Cup matches."
@@ -213,7 +232,7 @@ struct MenuBarDropdownView: View {
         }
     }
 
-    private var railTitle: String {
+    var railTitle: String {
         switch viewModel.contentState {
         case .loading:
             return "Loading"
@@ -231,11 +250,11 @@ struct MenuBarDropdownView: View {
         }
     }
 
-    private var railDetail: String {
+    var railDetail: String {
         spotlightMatch?.venue ?? ""
     }
 
-    private var upcomingEmptyStateText: String {
+    var upcomingEmptyStateText: String {
         switch viewModel.contentState {
         case .postTournament:
             return "No more fixtures remain in the 2026 tournament."
@@ -246,7 +265,7 @@ struct MenuBarDropdownView: View {
         }
     }
 
-    private func liveScoreTitle(for match: WorldCupMatch) -> String {
+    func liveScoreTitle(for match: WorldCupMatch) -> String {
         guard let score = match.score else {
             return "\(viewModel.matchupTitle(for: match)) Live"
         }
@@ -255,11 +274,15 @@ struct MenuBarDropdownView: View {
         case .abbreviations:
             "\(match.home.code) \(score.home)-\(score.away) \(match.away.code)"
         case .flags:
-            "\(match.home.hasRenderableFlag ? match.home.flagEmoji : match.home.code) \(score.home)-\(score.away) \(match.away.hasRenderableFlag ? match.away.flagEmoji : match.away.code)"
+            {
+                let homeLabel = match.home.hasRenderableFlag ? match.home.flagEmoji : match.home.code
+                let awayLabel = match.away.hasRenderableFlag ? match.away.flagEmoji : match.away.code
+                return "\(homeLabel) \(score.home)-\(score.away) \(awayLabel)"
+            }()
         }
     }
 
-    private func centerStatusText(for match: WorldCupMatch) -> String {
+    func centerStatusText(for match: WorldCupMatch) -> String {
         switch match.status {
         case .live(let minute):
             if let minute {
@@ -271,15 +294,6 @@ struct MenuBarDropdownView: View {
         case .finished:
             return "Final"
         }
-    }
-
-    private var panelBackground: some View {
-        RoundedRectangle(cornerRadius: WCBRadius.lg)
-            .fill(WCBColor.cardFill)
-            .overlay(
-                RoundedRectangle(cornerRadius: WCBRadius.lg)
-                    .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
-            )
     }
 }
 
@@ -363,27 +377,7 @@ private struct HeroMatchRow: View {
     @ViewBuilder
     private func teamColumn(country: Country, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 6) {
-            HStack(spacing: 10) {
-                if alignment == .trailing {
-                    Text(country.code)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(WCBColor.label)
-
-                    if country.hasRenderableFlag {
-                        Text(country.flagEmoji)
-                            .font(.system(size: 32))
-                    }
-                } else {
-                    if country.hasRenderableFlag {
-                        Text(country.flagEmoji)
-                            .font(.system(size: 32))
-                    }
-
-                    Text(country.code)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(WCBColor.label)
-                }
-            }
+            teamFlagAndCode(country: country, alignment: alignment)
 
             Text(country.name)
                 .font(.system(size: 12))
@@ -391,6 +385,31 @@ private struct HeroMatchRow: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
+    }
+
+    @ViewBuilder
+    private func teamFlagAndCode(country: Country, alignment: HorizontalAlignment) -> some View {
+        HStack(spacing: 10) {
+            if alignment == .trailing {
+                Text(country.code)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(WCBColor.label)
+
+                if country.hasRenderableFlag {
+                    Text(country.flagEmoji)
+                        .font(.system(size: 32))
+                }
+            } else {
+                if country.hasRenderableFlag {
+                    Text(country.flagEmoji)
+                        .font(.system(size: 32))
+                }
+
+                Text(country.code)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(WCBColor.label)
+            }
+        }
     }
 }
 

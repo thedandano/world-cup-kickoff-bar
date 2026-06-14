@@ -28,8 +28,8 @@ public struct WorldCup26Mapper: Sendable {
             (team.id, mapCountry(team))
         })
 
-        let cityByStadiumID = Dictionary(uniqueKeysWithValues: stadiumsResponse.stadiums.map { s in
-            (s.id, s.cityEn)
+        let cityByStadiumID = Dictionary(uniqueKeysWithValues: stadiumsResponse.stadiums.map { stadium in
+            (stadium.id, stadium.cityEn)
         })
 
         let matches = try gamesResponse.games.compactMap { game -> WorldCupMatch? in
