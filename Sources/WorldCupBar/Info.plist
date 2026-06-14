@@ -29,7 +29,7 @@
     <key>NSHumanReadableCopyright</key>
     <string>© 2026 Michilotl Studios. All rights reserved.</string>
     <key>SUFeedURL</key>
-    <string>https://michilotl.github.io/world-cup-bar/appcast.xml</string>
+    <string>https://github.com/thedandano/world-cup-kickoff-bar/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>5iRqKtPB74D/8pZt9Eui2t64dcElyfC1PdCm9+hgHxM=</string>
 </dict>
