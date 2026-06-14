@@ -1,0 +1,89 @@
+name: WorldCupBar
+
+options:
+  bundleIdPrefix: com.michilotl
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: DKUU66SF94
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: "YES"
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.0.0"
+  TelemetryDeck:
+    url: https://github.com/TelemetryDeck/SwiftSDK
+    exactVersion: "2.14.0"
+
+targets:
+  # ── Pure-Swift domain layer (no UI) ─────────────────────────────────────
+  WorldCupBarCore:
+    type: framework
+    platform: macOS
+    sources:
+      - Sources/WorldCupBarCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.michilotl.WorldCupBarCore
+
+  # ── SwiftUI menu-bar app ────────────────────────────────────────────────
+  WorldCupBar:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/WorldCupBar
+        excludes:
+          - "Info.plist"
+          - "WorldCupBar.entitlements"
+    dependencies:
+      - target: WorldCupBarCore
+      - package: Sparkle
+        product: Sparkle
+      - package: TelemetryDeck
+        product: TelemetryDeck
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.michilotl.WorldCupBar
+        INFOPLIST_FILE: Sources/WorldCupBar/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        CODE_SIGN_ENTITLEMENTS: Sources/WorldCupBar/WorldCupBar.entitlements
+        ENABLE_HARDENED_RUNTIME: "YES"
+
+  # ── Tests ───────────────────────────────────────────────────────────────
+  WorldCupBarCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/WorldCupBarCoreTests
+    dependencies:
+      - target: WorldCupBarCore
+
+  WorldCupBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/WorldCupBarTests
+    dependencies:
+      - target: WorldCupBar       # host app (enables @testable import WorldCupBar)
+      - target: WorldCupBarCore
+
+schemes:
+  WorldCupBar:
+    build:
+      targets:
+        WorldCupBar: all
+    test:
+      targets:
+        - WorldCupBarCoreTests
+        - WorldCupBarTests
+    run:
+      config: Debug

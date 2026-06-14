@@ -9,3 +9,6 @@ DerivedData/
 
 # Built .app bundle (scripts/build-app.sh)
 /dist/
+
+# XcodeGen-generated project (regenerate with: xcodegen generate)
+/WorldCupBar.xcodeproj/
