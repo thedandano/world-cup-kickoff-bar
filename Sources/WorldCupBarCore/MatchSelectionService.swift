@@ -51,6 +51,30 @@ public struct MatchSelectionService: Sendable {
         }
     }
 
+    /// The single most relevant match within an already-scoped list: the most
+    /// urgent live match, otherwise the next upcoming match, otherwise nothing.
+    /// Unlike `displayState`, it applies no follow filtering and no fallback —
+    /// the caller decides the scope (followed-only vs. the whole tournament).
+    public func spotlight(from matches: [WorldCupMatch], now: Date) -> MatchDisplayState {
+        let liveMatch = matches
+            .filter { $0.status.isLive }
+            .sorted { liveSortKey(for: $0, now: now) < liveSortKey(for: $1, now: now) }
+            .first
+        if let liveMatch {
+            return .live(liveMatch)
+        }
+
+        let upcomingMatch = matches
+            .filter { $0.status == .scheduled && $0.kickoffDate >= now }
+            .sorted { $0.kickoffDate < $1.kickoffDate }
+            .first
+        if let upcomingMatch {
+            return .upcoming(upcomingMatch)
+        }
+
+        return .empty
+    }
+
     public func isPostTournamentState(matches: [WorldCupMatch], now: Date) -> Bool {
         guard !matches.isEmpty else {
             return false

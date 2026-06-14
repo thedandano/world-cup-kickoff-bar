@@ -67,10 +67,6 @@ final class WorldCupBarViewModel {
         displayState.match
     }
 
-    var followedCountries: [Country] {
-        availableCountries.filter { followedCountryCodes.contains($0.code) }
-    }
-
     var isRefreshing: Bool {
         if case .refreshing = refreshState {
             return true
@@ -82,6 +78,22 @@ final class WorldCupBarViewModel {
         matches
             .filter { $0.status == .scheduled }
             .sorted { $0.kickoffDate < $1.kickoffDate }
+    }
+
+    var followedUpcomingMatches: [WorldCupMatch] {
+        upcomingMatches.filter { match in
+            followedCountryCodes.contains(match.home.code)
+                || followedCountryCodes.contains(match.away.code)
+        }
+    }
+
+    func dropdownSpotlight(followedOnly: Bool) -> MatchDisplayState {
+        let scope = followedOnly
+            ? matches.filter {
+                followedCountryCodes.contains($0.home.code) || followedCountryCodes.contains($0.away.code)
+            }
+            : matches
+        return selectionService.spotlight(from: scope, now: Date())
     }
 
     var footerStatusText: String {

@@ -5,15 +5,17 @@
   **A native macOS menu bar app for the 2026 FIFA World Cup**
 
   ![macOS](https://img.shields.io/badge/macOS-14.0+-black?style=flat-square&logo=apple)
-  ![Swift](https://img.shields.io/badge/Swift-5.9+-orange?style=flat-square&logo=swift)
+  ![Swift](https://img.shields.io/badge/Swift-6.0+-orange?style=flat-square&logo=swift)
   ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0+-blue?style=flat-square&logo=swift)
   ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-  ![Platform](https://img.shields.io/badge/platform-menu%20bar-purple?style=flat-square)
+  ![Platform](https://img.shields.io/badge/platform-MacOS-purple?style=flat-square)
 
-  [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-yellow?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/thedandano)
+
+
+  <a href="https://www.buymeacoffee.com/CagXd3ZFyZ"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=CagXd3ZFyZ&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 
   Live scores. Upcoming fixtures. Kickoff alerts.  
-  All from your menu bar — no browser required.
+  All from your menu bar. No browser required.
 
 </div>
 

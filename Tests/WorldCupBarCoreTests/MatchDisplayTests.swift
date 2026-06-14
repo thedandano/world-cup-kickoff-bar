@@ -194,3 +194,52 @@ import Testing
 
     #expect(MatchSelectionService().isPostTournamentState(matches: [finishedMatch], now: now))
 }
+
+@Test func spotlightPrefersMostUrgentLiveMatchOverUpcoming() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let liveMatch = WorldCupMatch(
+        id: "live", home: .unitedStates, away: .mexico,
+        kickoffDate: now.addingTimeInterval(-3_000), status: .live(minute: 80),
+        score: MatchScore(home: 1, away: 0), venue: "Estadio Azteca"
+    )
+    let upcomingMatch = WorldCupMatch(
+        id: "soon", home: .argentina, away: .france,
+        kickoffDate: now.addingTimeInterval(1_800), status: .scheduled,
+        score: nil, venue: "MetLife Stadium"
+    )
+
+    let state = MatchSelectionService().spotlight(from: [upcomingMatch, liveMatch], now: now)
+
+    #expect(state == .live(liveMatch))
+}
+
+@Test func spotlightReturnsNextUpcomingWhenNoLiveMatch() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let later = WorldCupMatch(
+        id: "later", home: .germany, away: .japan,
+        kickoffDate: now.addingTimeInterval(7_200), status: .scheduled,
+        score: nil, venue: "Lumen Field"
+    )
+    let sooner = WorldCupMatch(
+        id: "sooner", home: .argentina, away: .france,
+        kickoffDate: now.addingTimeInterval(1_800), status: .scheduled,
+        score: nil, venue: "MetLife Stadium"
+    )
+
+    let state = MatchSelectionService().spotlight(from: [later, sooner], now: now)
+
+    #expect(state == .upcoming(sooner))
+}
+
+@Test func spotlightIsEmptyWhenNoLiveOrUpcomingMatches() {
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let finished = WorldCupMatch(
+        id: "done", home: .brazil, away: .germany,
+        kickoffDate: now.addingTimeInterval(-86_400), status: .finished,
+        score: MatchScore(home: 2, away: 1), venue: "SoFi Stadium"
+    )
+
+    let state = MatchSelectionService().spotlight(from: [finished], now: now)
+
+    #expect(state == .empty)
+}

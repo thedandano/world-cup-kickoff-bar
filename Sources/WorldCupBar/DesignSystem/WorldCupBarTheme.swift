@@ -13,8 +13,10 @@ enum WCBColor {
     static let label             = Color(nsColor: .labelColor)
     static let secondaryLabel    = Color(nsColor: .secondaryLabelColor)
 
-    // Card chrome
-    static let cardBorder = Color.primary.opacity(0.10)
+    // Translucent card/control chrome, layered over the behind-window vibrancy.
+    static let cardFill    = Color.primary.opacity(WCBOpacity.cardFill)
+    static let controlFill = Color.primary.opacity(WCBOpacity.controlFill)
+    static let cardBorder  = Color.primary.opacity(WCBOpacity.border)
 }
 
 // MARK: - Spacing tokens
@@ -37,11 +39,17 @@ enum WCBRadius {
 enum WCBOpacity {
     static let disabled: Double = 0.38
     static let secondary: Double = 0.55
-    static let cardBorder: Double = 0.10
+
+    // Translucent surfaces layered over the window's behind-window vibrancy.
+    static let cardFill: Double = 0.04       // panels / cards
+    static let controlFill: Double = 0.08    // chips / pills
+    static let border: Double = 0.08         // hairline borders
 }
 
 // MARK: - Typography tokens
 enum WCBFont {
+    static let viewTitle: Font = .system(size: 22, weight: .bold)
+    static let viewSubtitle: Font = .system(size: 13)
     static let cardTitle: Font = .system(size: 14, weight: .semibold)
     static let rowPrimary: Font = .system(size: 14, weight: .medium)
     static let caption: Font = .system(size: 12)

@@ -5,22 +5,18 @@ import WorldCupBarCore
 struct MenuBarDropdownView: View {
     @Environment(\.openWindow) private var openWindow
     @Bindable var viewModel: WorldCupBarViewModel
+    @State private var selectedTab: MatchListTab = .following
 
     var body: some View {
         VStack(alignment: .leading, spacing: WCBSpacing.md) {
             toolbarSection
             highlightedMatchSection
-
-            upcomingMatchesSection
-
-            if !viewModel.availableCountries.isEmpty || !viewModel.followedCountries.isEmpty {
-                followedCountriesSection
-            }
+            matchesSection
             footerSection
         }
         .padding(.horizontal, WCBSpacing.md)
         .padding(.vertical, 14)
-        .background(VisualEffectBackground().ignoresSafeArea())
+        .background(WCBVibrancyBackground().ignoresSafeArea())
     }
 
     private var toolbarSection: some View {
@@ -66,7 +62,7 @@ struct MenuBarDropdownView: View {
     private var highlightedMatchSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center) {
-                LiveRail(text: railTitle, isLive: highlightedMatchIsLive)
+                LiveRail(text: railTitle, isLive: spotlightIsLive)
 
                 Spacer()
 
@@ -76,7 +72,7 @@ struct MenuBarDropdownView: View {
                     .lineLimit(1)
             }
 
-            if let match = viewModel.highlightedMatch {
+            if let match = spotlightMatch {
                 HeroMatchRow(
                     match: match,
                     centerText: centerStatusText(for: match),
@@ -94,54 +90,75 @@ struct MenuBarDropdownView: View {
         .background(panelBackground)
     }
 
-    private var followedCountriesSection: some View {
-        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
-            SectionHeader(title: "Following")
+    private var spotlight: MatchDisplayState {
+        viewModel.dropdownSpotlight(followedOnly: selectedTab == .following)
+    }
 
-            if viewModel.followedCountries.isEmpty {
-                Text(viewModel.availableCountries.isEmpty ? "Team list is loading." : "Not following anyone. Add teams in Settings.")
-                    .font(WCBFont.caption)
-                    .foregroundStyle(WCBColor.secondaryLabel)
-                    .padding(.horizontal, 2)
-            } else {
-                FlowLayout(spacing: 6) {
-                    ForEach(viewModel.followedCountries) { country in
-                        CountryChip(country: country)
-                    }
+    private var spotlightMatch: WorldCupMatch? {
+        guard case .content = viewModel.contentState else { return nil }
+        return spotlight.match
+    }
+
+    private var spotlightIsLive: Bool {
+        guard case .content = viewModel.contentState else { return false }
+        if case .live = spotlight { return true }
+        return false
+    }
+
+    private var matchesSection: some View {
+        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
+            Picker("Match list", selection: $selectedTab) {
+                ForEach(MatchListTab.allCases) { tab in
+                    Text(tab.title).tag(tab)
                 }
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+
+            matchList(for: selectedTab)
         }
     }
 
-    private var upcomingMatchesSection: some View {
-        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
-            SectionHeader(title: "Upcoming")
+    @ViewBuilder
+    private func matchList(for tab: MatchListTab) -> some View {
+        let matches = tab == .following ? viewModel.followedUpcomingMatches : viewModel.upcomingMatches
 
-            if viewModel.upcomingMatches.isEmpty {
-                Text(upcomingEmptyStateText)
-                    .font(WCBFont.caption)
-                    .foregroundStyle(WCBColor.secondaryLabel)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(viewModel.upcomingMatches.prefix(5)) { match in
-                        MatchRow(
-                            match: match,
-                            title: viewModel.dropdownMatchupTitle(for: match),
-                            time: viewModel.scheduledTime(for: match.kickoffDate)
-                        )
+        if matches.isEmpty {
+            Text(emptyText(for: tab))
+                .font(WCBFont.caption)
+                .foregroundStyle(WCBColor.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(matches.prefix(5)) { match in
+                    MatchRow(
+                        match: match,
+                        title: viewModel.dropdownMatchupTitle(for: match),
+                        time: viewModel.scheduledTime(for: match.kickoffDate)
+                    )
 
-                        if match.id != viewModel.upcomingMatches.prefix(5).last?.id {
-                            Divider()
-                                .overlay(WCBColor.separator)
-                        }
+                    if match.id != matches.prefix(5).last?.id {
+                        Divider()
+                            .overlay(WCBColor.separator)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(panelBackground)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(panelBackground)
+        }
+    }
+
+    private func emptyText(for tab: MatchListTab) -> String {
+        switch tab {
+        case .following:
+            return viewModel.followedCountryCodes.isEmpty
+                ? "You're not following any teams. Add teams in Settings."
+                : "No upcoming matches for the teams you follow."
+        case .all:
+            return upcomingEmptyStateText
         }
     }
 
@@ -177,10 +194,6 @@ struct MenuBarDropdownView: View {
     }
 
     private var highlightSubtitle: String {
-        if let match = viewModel.highlightedMatch {
-            return match.venue
-        }
-
         switch viewModel.contentState {
         case .loading:
             return "Loading the latest World Cup matches."
@@ -189,37 +202,32 @@ struct MenuBarDropdownView: View {
         case .postTournament:
             return "The 2026 tournament is complete. The app will wait for the next World Cup."
         case .content:
-            return "No tracked match is available right now."
+            return selectedTab == .following
+                ? "No upcoming matches for the teams you follow."
+                : "No upcoming matches right now."
         }
-    }
-
-    private var highlightedMatchIsLive: Bool {
-        viewModel.highlightedMatch?.status.isLive == true
     }
 
     private var railTitle: String {
         switch viewModel.contentState {
-        case .content(.live):
-            return "Live now"
-        case .content(.upcoming):
-            return "Up next"
         case .loading:
             return "Loading"
         case .unavailable:
             return "Offline"
         case .postTournament:
             return "2026 complete"
-        case .content(.empty):
-            return "World Cup"
+        case .content:
+            switch spotlight {
+            case .live:
+                return "Live now"
+            case .upcoming, .empty:
+                return "Up next"
+            }
         }
     }
 
     private var railDetail: String {
-        guard let match = viewModel.highlightedMatch else {
-            return ""
-        }
-
-        return match.venue
+        spotlightMatch?.venue ?? ""
     }
 
     private var upcomingEmptyStateText: String {
@@ -262,7 +270,7 @@ struct MenuBarDropdownView: View {
 
     private var panelBackground: some View {
         RoundedRectangle(cornerRadius: WCBRadius.lg)
-            .fill(WCBColor.controlBackground.opacity(0.72))
+            .fill(WCBColor.cardFill)
             .overlay(
                 RoundedRectangle(cornerRadius: WCBRadius.lg)
                     .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
@@ -276,26 +284,17 @@ private struct LiveRail: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Circle()
-                .fill(isLive ? Color.green : WCBColor.accent)
-                .frame(width: 8, height: 8)
+            if isLive {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 8, height: 8)
+            }
 
             Text(text.uppercased())
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(isLive ? Color.green : WCBColor.secondaryLabel)
                 .tracking(0.3)
         }
-    }
-}
-
-private struct SectionHeader: View {
-    let title: String
-
-    var body: some View {
-        Text(title.uppercased())
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(WCBColor.secondaryLabel)
-            .padding(.horizontal, 2)
     }
 }
 
@@ -314,31 +313,6 @@ private struct StatusPill: View {
                 Capsule()
                     .fill(isLive ? Color.green.opacity(0.13) : WCBColor.controlBackground)
             )
-    }
-}
-
-private struct CountryChip: View {
-    let country: Country
-
-    var body: some View {
-        HStack(spacing: 5) {
-            if country.hasRenderableFlag {
-                Text(country.flagEmoji)
-            }
-            Text(country.code)
-                .fontWeight(.semibold)
-        }
-        .font(.system(size: 12))
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
-        .background(
-            Capsule()
-                .fill(WCBColor.controlBackground.opacity(0.8))
-                .overlay(
-                    Capsule()
-                        .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
-                )
-        )
     }
 }
 
@@ -388,10 +362,17 @@ private struct HeroMatchRow: View {
             teamColumn(country: match.home, alignment: .leading)
 
             VStack(spacing: 6) {
-                Text(scoreText)
-                    .font(.system(size: 28, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(showLivePill ? Color.green : WCBColor.label)
+                if showLivePill {
+                    Text(scoreText)
+                        .font(.system(size: 28, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.green)
+                } else {
+                    Text("vs")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(WCBColor.secondaryLabel)
+                        .tracking(1)
+                }
 
                 Text(centerText)
                     .font(.system(size: 12, weight: .semibold))
@@ -442,5 +423,19 @@ private struct HeroMatchRow: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
+    }
+}
+
+private enum MatchListTab: String, CaseIterable, Identifiable {
+    case following
+    case all
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .following: return "Following"
+        case .all:       return "All Matches"
+        }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WorldCup26APIClient: Sendable {
+public struct WorldCup26DataSource: WorldCupDataSource, Sendable {
     public let baseURL: URL
     private let session: URLSession
     private let decoder: JSONDecoder

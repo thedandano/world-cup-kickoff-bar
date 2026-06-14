@@ -57,8 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
+        // Activation now happens alongside openWindow in the menu-bar scene's
+        // notification handler, which avoids racing window creation.
         NotificationCenter.default.post(name: .wcbOpenSettings, object: nil)
-        Task { @MainActor in NSApp.activate(ignoringOtherApps: true) }
     }
 }
 

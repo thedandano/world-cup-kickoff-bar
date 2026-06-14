@@ -17,9 +17,11 @@ struct SettingsView: View {
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(WCBVibrancyBackground().ignoresSafeArea())
         } detail: {
             ZStack {
-                SettingsDetailBackground()
+                WCBVibrancyBackground()
                     .ignoresSafeArea()
                 detailContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -74,8 +76,8 @@ private struct DisplayPanel: View {
     @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
-        PanelScrollView {
-            SettingsCard(title: "Menu Bar Display", subtitle: "Choose the compact match label.") {
+        PanelScrollView(title: "Display", subtitle: "Choose the compact match label.") {
+            SettingsCard {
                 HStack(alignment: .center, spacing: WCBSpacing.lg) {
                     VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Display mode")
@@ -114,11 +116,8 @@ private struct FollowingPanel: View {
     }
 
     var body: some View {
-        PanelScrollView {
-            SettingsCard(
-                title: "Following",
-                subtitle: "Teams you follow get priority in the menu bar."
-            ) {
+        PanelScrollView(title: "Following", subtitle: "Teams you follow get priority in the menu bar.") {
+            SettingsCard {
                 if viewModel.availableCountries.isEmpty {
                     Text("Team list will appear after the first live refresh.")
                         .font(WCBFont.caption)
@@ -180,8 +179,8 @@ private struct NotificationsPanel: View {
     @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
-        PanelScrollView {
-            SettingsCard(title: "Kickoff Alerts", subtitle: "Get notified before followed matches kick off.") {
+        PanelScrollView(title: "Notifications", subtitle: "Get notified before followed matches kick off.") {
+            SettingsCard {
                 HStack(spacing: WCBSpacing.md) {
                     VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Alert timing")
@@ -212,8 +211,8 @@ private struct AnalyticsPanel: View {
     @Bindable var viewModel: WorldCupBarViewModel
 
     var body: some View {
-        PanelScrollView {
-            SettingsCard(title: "Analytics", subtitle: "Control product analytics.") {
+        PanelScrollView(title: "Analytics", subtitle: "Control product analytics.") {
+            SettingsCard {
                 HStack(spacing: WCBSpacing.md) {
                     VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Usage analytics")
@@ -239,8 +238,8 @@ private struct DataPanel: View {
     var updaterViewModel: UpdaterViewModel
 
     var body: some View {
-        PanelScrollView {
-            SettingsCard(title: "Data", subtitle: "Refresh match data or check for app updates.") {
+        PanelScrollView(title: "Data", subtitle: "Refresh match data or check for app updates.") {
+            SettingsCard {
                 HStack(spacing: WCBSpacing.md) {
                     VStack(alignment: .leading, spacing: WCBSpacing.xs) {
                         Text("Match data")
@@ -282,50 +281,54 @@ private struct DataPanel: View {
 
 // MARK: - Shared layout components
 
+// Scrolling container for a settings panel. The view's title and one-line
+// description live at the top of the scroll content, so they scroll away with
+// the rest of the panel instead of sitting in a fixed window chrome.
 private struct PanelScrollView<Content: View>: View {
+    let title: String
+    let subtitle: String
     @ViewBuilder let content: Content
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WCBSpacing.lg) {
+                VStack(alignment: .leading, spacing: WCBSpacing.xs) {
+                    Text(title)
+                        .font(WCBFont.viewTitle)
+                        .foregroundStyle(WCBColor.label)
+                    Text(subtitle)
+                        .font(WCBFont.viewSubtitle)
+                        .foregroundStyle(.secondary)
+                }
                 content
             }
-            .padding(WCBSpacing.lg)
+            .padding(.horizontal, WCBSpacing.lg)
+            .padding(.top, WCBSpacing.xl)
+            .padding(.bottom, WCBSpacing.lg)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
+// A rounded, hairline-bordered group container for control rows. The section
+// heading now lives in PanelScrollView's title, so the card itself is chrome.
 private struct SettingsCard<Content: View>: View {
-    let title: String
-    let subtitle: String
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: WCBSpacing.sm) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(WCBFont.cardTitle)
-                    .foregroundStyle(WCBColor.label)
-                Text(subtitle)
-                    .font(WCBFont.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            VStack(alignment: .leading, spacing: 0) {
-                content
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: WCBRadius.md)
-                    .fill(Color.primary.opacity(0.04))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: WCBRadius.md)
-                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
-                    )
-            )
+        VStack(alignment: .leading, spacing: 0) {
+            content
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: WCBRadius.md)
+                .fill(WCBColor.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: WCBRadius.md)
+                        .strokeBorder(WCBColor.cardBorder, lineWidth: 0.5)
+                )
+        )
     }
 }
 

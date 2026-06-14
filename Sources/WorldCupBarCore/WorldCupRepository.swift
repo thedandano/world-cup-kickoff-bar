@@ -6,7 +6,7 @@ public protocol WorldCupDataProviding: Sendable {
 }
 
 public struct WorldCupRepository: WorldCupDataProviding, Sendable {
-    private let client: WorldCup26APIClient
+    private let dataSource: any WorldCupDataSource
     private let mapper: WorldCup26Mapper
     private let store: WorldCupSnapshotStore
     private let retryPolicy: RetryPolicy
@@ -14,14 +14,14 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
     private let now: @Sendable () -> Date
 
     public init(
-        client: WorldCup26APIClient,
+        dataSource: any WorldCupDataSource,
         mapper: WorldCup26Mapper,
         store: WorldCupSnapshotStore,
         retryPolicy: RetryPolicy = RetryPolicy(),
         telemetry: any WorldCupTelemetry = NoOpWorldCupTelemetry(),
         now: @escaping @Sendable () -> Date = Date.init
     ) {
-        self.client = client
+        self.dataSource = dataSource
         self.mapper = mapper
         self.store = store
         self.retryPolicy = retryPolicy
@@ -45,9 +45,9 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
         do {
             let result = try await retryPolicy.execute(
                 operation: {
-                    async let games = client.fetchGames()
-                    async let teams = client.fetchTeams()
-                    async let stadiums = (try? client.fetchStadiums()) ?? WorldCup26StadiumsResponse(stadiums: [])
+                    async let games = dataSource.fetchGames()
+                    async let teams = dataSource.fetchTeams()
+                    async let stadiums = (try? dataSource.fetchStadiums()) ?? WorldCup26StadiumsResponse(stadiums: [])
                     return try await mapper.mapSnapshot(
                         gamesResponse: games,
                         teamsResponse: teams,

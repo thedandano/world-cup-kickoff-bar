@@ -79,6 +79,86 @@ import WorldCupBarCore
     _ = countBefore
 }
 
+@MainActor
+@Test func followedUpcomingMatchesContainsOnlyMatchesWithFollowedTeams() async {
+    let future = Date(timeIntervalSince1970: 1_900_000_000)
+    let snapshot = WorldCupSnapshot(
+        matches: [
+            WorldCupMatch(id: "m1", home: .unitedStates, away: .brazil,
+                          kickoffDate: future, status: .scheduled, score: nil, venue: "MetLife Stadium"),
+            WorldCupMatch(id: "m2", home: .argentina, away: .france,
+                          kickoffDate: future.addingTimeInterval(3600), status: .scheduled, score: nil, venue: "SoFi Stadium"),
+            WorldCupMatch(id: "m3", home: .germany, away: .japan,
+                          kickoffDate: future.addingTimeInterval(7200), status: .scheduled, score: nil, venue: "Lumen Field")
+        ],
+        countries: Country.previewDefaults,
+        fetchedAt: Date(timeIntervalSince1970: 1_800_000_000)
+    )
+    let viewModel = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: snapshot),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler()
+    )
+
+    await viewModel.start()
+    viewModel.followedCountryCodes = ["USA"]
+
+    #expect(viewModel.upcomingMatches.count == 3)
+    #expect(viewModel.followedUpcomingMatches.map(\.id) == ["m1"])
+}
+
+@MainActor
+@Test func followedUpcomingMatchesIsEmptyWhenNoTeamsFollowed() async {
+    let future = Date(timeIntervalSince1970: 1_900_000_000)
+    let snapshot = WorldCupSnapshot(
+        matches: [
+            WorldCupMatch(id: "m1", home: .unitedStates, away: .brazil,
+                          kickoffDate: future, status: .scheduled, score: nil, venue: "MetLife Stadium")
+        ],
+        countries: Country.previewDefaults,
+        fetchedAt: Date(timeIntervalSince1970: 1_800_000_000)
+    )
+    let viewModel = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: snapshot),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler()
+    )
+
+    await viewModel.start()
+    viewModel.followedCountryCodes = []
+
+    #expect(viewModel.upcomingMatches.count == 1)
+    #expect(viewModel.followedUpcomingMatches.isEmpty)
+}
+
+@MainActor
+@Test func dropdownSpotlightScopesToTheSelectedTab() async {
+    let soon = Date(timeIntervalSinceNow: 1_800)
+    let later = Date(timeIntervalSinceNow: 3_600)
+    let snapshot = WorldCupSnapshot(
+        matches: [
+            WorldCupMatch(id: "argfra", home: .argentina, away: .france,
+                          kickoffDate: soon, status: .scheduled, score: nil, venue: "MetLife Stadium"),
+            WorldCupMatch(id: "usabra", home: .unitedStates, away: .brazil,
+                          kickoffDate: later, status: .scheduled, score: nil, venue: "SoFi Stadium")
+        ],
+        countries: Country.previewDefaults,
+        fetchedAt: Date()
+    )
+    let viewModel = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: snapshot),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler()
+    )
+
+    await viewModel.start()
+    viewModel.followedCountryCodes = ["USA"]
+
+    // All Matches → soonest overall (ARG vs FRA). Following → soonest followed (USA vs BRA).
+    #expect(viewModel.dropdownSpotlight(followedOnly: false).match?.id == "argfra")
+    #expect(viewModel.dropdownSpotlight(followedOnly: true).match?.id == "usabra")
+}
+
 private struct StubRepository: WorldCupDataProviding {
     var cachedSnapshot: WorldCupSnapshot?
     var refreshedSnapshot: WorldCupSnapshot?
