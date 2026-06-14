@@ -10,25 +10,30 @@ jobs:
     name: Build, Sign, Notarize, Release (DMG)
     runs-on: macos-15
     env:
-      # Pin to env var so shell steps never interpolate the ref directly
       GIT_TAG: ${{ github.ref_name }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Resolve Swift packages
-        run: swift package resolve
+      # The .xcodeproj is generated from project.yml (not committed), so build it here.
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
 
       - name: SwiftLint
         run: |
           brew install swiftlint
           swiftlint lint --strict
 
-      - name: Run tests
-        run: swift test
+      - name: Test
+        run: |
+          xcodebuild test -project WorldCupBar.xcodeproj -scheme WorldCupBar \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO
 
-      # ── Import Developer ID certificate into a temp keychain ──────────────
+      # ── Import the Developer ID Application cert into a temp keychain ─────
       - name: Import signing certificate
         env:
           DEVELOPER_ID_CERT_BASE64: ${{ secrets.DEVELOPER_ID_CERT_BASE64 }}
@@ -42,35 +47,45 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$RUNNER_TEMP/cert.p12" \
             -P "$DEVELOPER_ID_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+          # Allow codesign to use the key non-interactively
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      # ── Build + bundle + Developer-ID sign (build-app.sh embeds Sparkle.framework,
-      #    copies resource bundles, fixes the rpath, signs with hardened runtime) ──
-      - name: Build, bundle & sign app
+      # ── Archive (Release, Developer ID) — Xcode embeds Sparkle + the icon ─
+      - name: Archive
         env:
-          SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
-          ENTITLEMENTS: Sources/WorldCupBar/WorldCupBar.entitlements
-          UNIVERSAL: "1"
+          DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
         run: |
-          MARKETING_VERSION="${GIT_TAG#v}" ./scripts/build-app.sh
+          xcodebuild archive \
+            -project WorldCupBar.xcodeproj -scheme WorldCupBar -configuration Release \
+            -archivePath "$RUNNER_TEMP/WorldCupBar.xcarchive" \
+            MARKETING_VERSION="${GIT_TAG#v}" CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY"
 
-      # ── Notarize the app and staple it (so it's trusted offline once dragged out) ──
+      - name: Export (developer-id)
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/WorldCupBar.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ExportOptions.plist
+
+      # ── Notarize + staple the app (trusted offline once dragged out) ─────
       - name: Notarize & staple app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          ditto -c -k --keepParent "dist/World Cup Bar.app" "$RUNNER_TEMP/app.zip"
+          APP="$RUNNER_TEMP/export/WorldCupBar.app"
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/app.zip"
           xcrun notarytool submit "$RUNNER_TEMP/app.zip" \
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
-          xcrun stapler staple "dist/World Cup Bar.app"
+          xcrun stapler staple "$APP"
 
-      # ── Package the (stapled) app into a drag-to-Applications DMG ─────────
       - name: Package DMG
-        run: ./scripts/make-dmg.sh
+        run: ./scripts/make-dmg.sh "$RUNNER_TEMP/export/WorldCupBar.app" dist
 
-      # ── Sign, notarize, and staple the DMG itself ────────────────────────
+      # ── Sign, notarize & staple the DMG ──────────────────────────────────
       - name: Sign, notarize & staple DMG
         env:
           DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
@@ -84,10 +99,11 @@ jobs:
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
           xcrun stapler staple "$DMG"
 
-      # ── Generate the Sparkle appcast (signs the DMG with your EdDSA key) ──
+      # ── Sign the Sparkle appcast and publish the Release ─────────────────
       - name: Generate Sparkle appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          REPO: ${{ github.repository }}
         run: |
           echo -n "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_key"
           SPARKLE_VERSION=$(python3 -c \
@@ -97,15 +113,13 @@ jobs:
             "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
           mkdir -p "$RUNNER_TEMP/sparkle"
           tar -xJf "$RUNNER_TEMP/sparkle.tar.xz" -C "$RUNNER_TEMP/sparkle"
-          # generate_appcast scans dist/ for the .dmg, computes its EdDSA signature + version
           "$RUNNER_TEMP/sparkle/bin/generate_appcast" \
             --ed-key-file "$RUNNER_TEMP/sparkle_key" \
-            --link "https://michilotl.github.io/world-cup-bar" \
-            --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${GIT_TAG}/" \
+            --link "https://github.com/${REPO}" \
+            --download-url-prefix "https://github.com/${REPO}/releases/download/${GIT_TAG}/" \
             dist/
           cp dist/appcast.xml appcast.xml
 
-      # ── Publish the DMG + appcast as a GitHub Release ────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

@@ -1,40 +1,38 @@
 #!/usr/bin/env bash
 #
-# make-dmg.sh — package "World Cup Bar.app" into a mount-and-drag-to-Applications
-# disk image. Run scripts/build-app.sh first (it produces dist/World Cup Bar.app).
+# make-dmg.sh — package a built .app into a mount-and-drag-to-Applications DMG.
 #
-# Output: dist/World Cup Bar-<version>.dmg
+# Usage:   ./scripts/make-dmg.sh <path-to-.app> [output-dir]
+# Example: ./scripts/make-dmg.sh build/export/WorldCupBar.app dist
+# Output:  <output-dir>/<AppName>-<version>.dmg
 #
-# The DMG shows the app next to an Applications shortcut so the user just drags
-# one onto the other — the classic macOS install. Icon layout is best-effort
-# (needs a Finder/GUI session); the DMG is valid either way.
+# Icon layout is best-effort (needs a Finder/GUI session); the DMG is valid
+# either way — it always shows the app next to an Applications shortcut.
 #
 set -euo pipefail
 
-APP_NAME="World Cup Bar"
-VOL_NAME="World Cup Bar"
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+APP="${1:?usage: make-dmg.sh <path-to-.app> [output-dir]}"
+OUT_DIR="${2:-dist}"
+[ -d "$APP" ] || { echo "✗ $APP not found"; exit 1; }
 
-APP="dist/${APP_NAME}.app"
-[ -d "$APP" ] || { echo "✗ $APP not found — run scripts/build-app.sh first"; exit 1; }
+PLIST="$APP/Contents/Info.plist"
+NAME="$(basename "$APP" .app)"
+VOL_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$PLIST" 2>/dev/null || echo "$NAME")"
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
 
-VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
-DMG="dist/WorldCupBar-${VERSION}.dmg"
+mkdir -p "$OUT_DIR"
+DMG="${OUT_DIR}/${NAME}-${VERSION}.dmg"
 RW_DMG="$(mktemp -u).dmg"
 MOUNT_DIR="/Volumes/${VOL_NAME}"
-
-# Clean up any stale mount from a previous run
 hdiutil detach "$MOUNT_DIR" -quiet 2>/dev/null || true
 
-echo "▸ Staging app + Applications shortcut…"
+echo "▸ Staging ${NAME}.app + Applications shortcut…"
 STAGING="$(mktemp -d)"
 cp -R "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 
 echo "▸ Creating writable image…"
-hdiutil create -srcfolder "$STAGING" -volname "$VOL_NAME" -fs HFS+ \
-    -format UDRW -ov "$RW_DMG" >/dev/null
+hdiutil create -srcfolder "$STAGING" -volname "$VOL_NAME" -fs HFS+ -format UDRW -ov "$RW_DMG" >/dev/null
 rm -rf "$STAGING"
 
 echo "▸ Laying out the window…"
@@ -50,7 +48,7 @@ tell application "Finder"
         set viewOptions to the icon view options of container window
         set arrangement of viewOptions to not arranged
         set icon size of viewOptions to 120
-        set position of item "${APP_NAME}.app" of container window to {140, 175}
+        set position of item "${NAME}.app" of container window to {140, 175}
         set position of item "Applications" of container window to {380, 175}
         update without registering applications
         delay 1
@@ -68,4 +66,4 @@ rm -f "$RW_DMG"
 
 echo ""
 echo "✓ Built $DMG"
-echo "  Double-click it → drag “${APP_NAME}.app” onto the Applications shortcut."
+echo "  Double-click → drag “${NAME}.app” onto the Applications shortcut."
