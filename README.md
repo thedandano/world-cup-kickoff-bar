@@ -38,37 +38,19 @@ No browser tab. No Dock clutter. Just a tiny ⚽ that's always there when you wa
 
 ## Install
 
-> **Requires macOS 14 (Sonoma) or later**, and Apple's developer tools (run `xcode-select --install` once if you've never built anything on your Mac).
+> **Requires macOS 14 (Sonoma) or later.**
 
-A one-time-purchase download is on the way. For now it's one command to build your own copy:
+1. Download the latest **`WorldCupBar-x.y.z.dmg`** from the [Releases page](https://github.com/thedandano/world-cup-kickoff-bar/releases).
+2. Open the DMG and **drag World Cup Bar onto the Applications shortcut**.
+3. Launch it — a ⚽ appears in your menu bar. Click it for scores and fixtures.
 
-**1. Build the app**
-
-```bash
-./scripts/build-app.sh
-```
-
-This produces **`dist/World Cup Bar.app`** — a normal, double-clickable Mac app.
-
-**2. Move it to Applications**
-
-Drag **`World Cup Bar.app`** from the `dist` folder into your **Applications** folder.
-
-**3. Open it the first time**
-
-Because this is a free build that isn't signed with a paid Apple certificate, macOS plays it safe the first time. **Right-click** the app → **Open** → **Open**. You only do this once.
-
-**4. Look up ⚽**
-
-A soccer ball appears in your menu bar. Click it for scores and fixtures. That's it — you're set.
+The app is signed and **notarized by Apple**, so it opens with no scary warnings — and it **updates itself** automatically when new versions ship.
 
 ### Launch it automatically when your Mac starts
 
-So it's always there without thinking about it:
-
-1. Open **System Settings → General → Login Items**
-2. Under **"Open at Login"**, click the **+**
-3. Pick **World Cup Bar** from your Applications folder
+1. **System Settings → General → Login Items**
+2. Under **"Open at Login"**, click **+**
+3. Pick **World Cup Bar**
 
 Done — it'll start with your Mac from now on.
 
@@ -93,13 +75,18 @@ No personal data is collected. Your followed teams, preferences, and cached scor
 
 ## For developers
 
+The app is an Xcode project generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen) (Xcode 16+):
+
 ```bash
-swift build      # build
-swift test       # run the test suite
-swiftlint lint --strict   # lint
+brew install xcodegen
+xcodegen generate                                                  # creates WorldCupBar.xcodeproj
+open WorldCupBar.xcodeproj                                          # Build & Run with ⌘R
+xcodebuild -scheme WorldCupBar -destination 'platform=macOS' test  # full test suite
+swift test                                                         # fast: Core logic only
+swiftlint lint --strict                                            # lint
 ```
 
-The codebase is strict MVVM with a `WorldCupBarCore` (pure logic) / `WorldCupBar` (SwiftUI) split. Architecture, conventions, and the folder layout are documented in [`CLAUDE.md`](CLAUDE.md). Contributions welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Strict MVVM with a `WorldCupBarCore` (pure logic) / `WorldCupBar` (SwiftUI) split. Architecture and conventions live in [`CLAUDE.md`](CLAUDE.md); release steps in [`RELEASING.md`](RELEASING.md). Contributions welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 

@@ -4,16 +4,21 @@ This project ships as a **notarized, drag-to-Applications DMG** that **auto-upda
 
 ---
 
-## Local build (no signing needed)
+## Local build
 
-To produce an ad-hoc-signed app + DMG you can test on your own Mac:
+Open the app in Xcode and Build & Run (⌘R):
 
 ```bash
-./scripts/build-app.sh      # → dist/World Cup Bar.app
-./scripts/make-dmg.sh       # → dist/WorldCupBar-<version>.dmg
+brew install xcodegen
+xcodegen generate
+open WorldCupBar.xcodeproj
 ```
 
-First launch of an ad-hoc build: **right-click → Open → Open** (it isn't notarized).
+To produce a local DMG for testing, archive the app (Product → Archive → Distribute App → Developer ID, or just copy the built `.app`), then:
+
+```bash
+./scripts/make-dmg.sh <path-to-WorldCupBar.app>   # → dist/WorldCupBar-<version>.dmg
+```
 
 ---
 

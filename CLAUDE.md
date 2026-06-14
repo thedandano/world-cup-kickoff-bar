@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A macOS menu bar app (SwiftUI, SwiftPM, macOS 13+) that shows live World Cup 2026 match scores and upcoming fixtures. Menu bar-only (`LSUIElement = YES`). Distributed as a paid one-time purchase (App Store or direct download).
+A macOS menu bar app (SwiftUI, Xcode project via XcodeGen, macOS 14+) that shows live World Cup 2026 match scores and upcoming fixtures. Menu bar-only (`LSUIElement = YES`). Distributed as a paid one-time purchase (App Store or direct download).
 
 **Data source:** `worldcup26.ir` — no auth required for read endpoints.  
 **Bundle ID:** `com.michilotl.WorldCupBar`  
@@ -46,19 +46,24 @@ WorldCupBar       — SwiftUI app, depends on Core + TelemetryDeck + Sparkle
 
 ## Development Commands
 
-```bash
-# Build
-swift build
+The app is an Xcode project generated from `project.yml` (XcodeGen). The `.xcodeproj` is gitignored — regenerate after cloning or changing `project.yml`/file layout.
 
-# Test
+```bash
+# (Re)generate the Xcode project
+xcodegen generate
+
+# Build the app (or open WorldCupBar.xcodeproj and ⌘R)
+xcodebuild -scheme WorldCupBar -configuration Debug build
+
+# Test — full suite via Xcode, or fast Core-only via SwiftPM
+xcodebuild -scheme WorldCupBar -destination 'platform=macOS' test
 swift test
 
-# Lint (requires swiftlint installed)
+# Lint
 swiftlint lint --strict
-
-# Lint with analyzer rules
-swiftlint analyze --compiler-log-path compile_commands.json
 ```
+
+> The Xcode project is the source of truth for **building and shipping the app**. `Package.swift` is retained for fast `swift test` of pure-Swift logic; keep deps in sync between `project.yml` and `Package.swift`.
 
 ---
 
