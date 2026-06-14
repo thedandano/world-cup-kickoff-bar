@@ -15,16 +15,31 @@ A macOS menu bar app (SwiftUI, SwiftPM, macOS 13+) that shows live World Cup 202
 ### MVVM — strict enforcement
 
 - **Model layer** (`WorldCupBarCore` target): `WorldCupMatch`, `Country`, `WorldCupSnapshot`, repository, mapper, formatter, selection service. Zero UI imports.  
-- **ViewModel** (`WorldCupBarViewModel`): `@MainActor ObservableObject`. Owns all business logic, UserDefaults persistence, `NotificationScheduler` coordination. Never imports AppKit/SwiftUI directly.  
+- **ViewModel** (`WorldCupBarViewModel`): `@MainActor @Observable` (Observation macro — `import Observation`, never SwiftUI/AppKit/Combine). Owns all business logic, UserDefaults persistence, `NotificationScheduler` coordination.  
 - **View layer** (`WorldCupBar` target): `MenuBarDropdownView`, `SettingsView`, `WorldCupBarApp`. Binds to ViewModel only. Local `@State` is fine for display-only state (e.g., search text).  
 
 Do not put business logic in Views. Do not put UI imports in Core.
 
-### Module split
+### Module split & folder layout
+
+**Hybrid layout** — *feature-up, layer-down*: role-based folders in Core (one domain → group by technical role), feature-based folders in the app (many surfaces → group by feature).
 
 ```
 WorldCupBarCore   — pure Swift, no UI, no external deps
+  Models/         WorldCupMatch, Country, MatchScore, MatchStatus, WorldCupSnapshot,
+                  MatchDisplayState, DisplayMode, VSMarkStyle
+  DataSource/     WorldCupDataSource (port), WorldCup26DataSource (adapter), WorldCup26Mapper
+  Repository/     WorldCupRepository, WorldCupSnapshotStore, RetryPolicy, MatchDataProvider (deprecated alias)
+  Services/       MatchSelectionService, MatchFormatter, WorldCupTelemetry
+
 WorldCupBar       — SwiftUI app, depends on Core + TelemetryDeck + Sparkle
+  App/            WorldCupBarApp (@main), AppDelegate, WorldCupBarViewModel
+  MenuBar/        MenuBarDropdownView, MatchRow, VSMark
+  Settings/       SettingsView
+  Notifications/  NotificationScheduler
+  Analytics/      WorldCupMonitoring (WorldCupAnalyticsTracking + TelemetryDeck adapter)
+  Updates/        UpdaterViewModel
+  DesignSystem/   WorldCupBarTheme, VisualEffectView
 ```
 
 ---
@@ -51,14 +66,14 @@ swiftlint analyze --compiler-log-path compile_commands.json
 
 | File | Purpose |
 |------|---------|
-| `Sources/WorldCupBarCore/WorldCup26APIClient.swift` | HTTP calls to worldcup26.ir |
-| `Sources/WorldCupBarCore/WorldCup26Mapper.swift` | Maps API DTOs → domain model; skips TBD knockout games |
-| `Sources/WorldCupBarCore/WorldCupRepository.swift` | Retry + cache + change-detection |
-| `Sources/WorldCupBarCore/MatchFormatter.swift` | All string formatting for match display |
-| `Sources/WorldCupBar/WorldCupBarViewModel.swift` | Published state, polling, notifications |
-| `Sources/WorldCupBar/NotificationScheduler.swift` | UNUserNotificationCenter scheduling |
-| `Sources/WorldCupBar/MenuBarDropdownView.swift` | Menu bar popover UI |
-| `Sources/WorldCupBar/SettingsView.swift` | Settings window |
+| `Sources/WorldCupBarCore/DataSource/WorldCup26DataSource.swift` | HTTP calls to worldcup26.ir |
+| `Sources/WorldCupBarCore/DataSource/WorldCup26Mapper.swift` | Maps API DTOs → domain model; skips TBD knockout games |
+| `Sources/WorldCupBarCore/Repository/WorldCupRepository.swift` | Retry + cache + change-detection |
+| `Sources/WorldCupBarCore/Services/MatchFormatter.swift` | All string formatting for match display |
+| `Sources/WorldCupBar/App/WorldCupBarViewModel.swift` | Observable state, polling, notifications |
+| `Sources/WorldCupBar/Notifications/NotificationScheduler.swift` | UNUserNotificationCenter scheduling |
+| `Sources/WorldCupBar/MenuBar/MenuBarDropdownView.swift` | Menu bar popover UI |
+| `Sources/WorldCupBar/Settings/SettingsView.swift` | Settings window |
 
 ---
 
