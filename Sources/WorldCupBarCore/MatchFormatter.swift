@@ -43,6 +43,15 @@ public struct MatchFormatter: Sendable {
         }
     }
 
+    public func teamLabel(for country: Country, displayMode: DisplayMode) -> String {
+        switch displayMode {
+        case .abbreviations:
+            return country.code
+        case .flags:
+            return flagOrCode(for: country)
+        }
+    }
+
     public func dropdownMatchupTitle(for match: WorldCupMatch) -> String {
         "\(flagAndCode(for: match.home)) - \(flagAndCode(for: match.away))"
     }

@@ -159,6 +159,106 @@ import WorldCupBarCore
     #expect(viewModel.dropdownSpotlight(followedOnly: true).match?.id == "usabra")
 }
 
+@MainActor
+@Test func vsMarkStyleDefaultsToRing() {
+    let suite = "vsMarkTest-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    let viewModel = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: nil),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler(),
+        defaults: defaults
+    )
+
+    #expect(viewModel.vsMarkStyle == .ring)
+}
+
+@MainActor
+@Test func vsMarkStylePersistsAcrossViewModels() {
+    let suite = "vsMarkTest-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    let first = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: nil),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler(),
+        defaults: defaults
+    )
+    first.vsMarkStyle = .clash
+
+    let second = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: nil),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler(),
+        defaults: defaults
+    )
+
+    #expect(second.vsMarkStyle == .clash)
+}
+
+@MainActor
+@Test func menuBarLabelIsMatchupForUpcomingSpotlight() async {
+    let suite = "vsMarkTest-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    let future = Date(timeIntervalSinceNow: 3_600)
+    let snapshot = WorldCupSnapshot(
+        matches: [
+            WorldCupMatch(id: "m1", home: .unitedStates, away: .brazil,
+                          kickoffDate: future, status: .scheduled, score: nil, venue: "MetLife Stadium")
+        ],
+        countries: Country.previewDefaults,
+        fetchedAt: Date()
+    )
+    let viewModel = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: nil, refreshedSnapshot: snapshot),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler(),
+        defaults: defaults
+    )
+
+    await viewModel.start()
+    viewModel.followedCountryCodes = ["USA"]
+
+    guard case let .matchup(home, away, _) = viewModel.menuBarLabel else {
+        Issue.record("Expected .matchup, got \(viewModel.menuBarLabel)")
+        return
+    }
+    #expect(home == Country.unitedStates.code)
+    #expect(away == Country.brazil.code)
+}
+
+@MainActor
+@Test func menuBarLabelIsTextForPostTournament() async {
+    let suite = "vsMarkTest-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    let snapshot = WorldCupSnapshot(
+        matches: [
+            WorldCupMatch(id: "final", home: .argentina, away: .france,
+                          kickoffDate: Date(timeIntervalSince1970: 1_799_900_000),
+                          status: .finished, score: MatchScore(home: 3, away: 2), venue: "MetLife Stadium")
+        ],
+        countries: Country.previewDefaults,
+        fetchedAt: Date(timeIntervalSince1970: 1_800_000_000)
+    )
+    let viewModel = WorldCupBarViewModel(
+        repository: StubRepository(cachedSnapshot: snapshot, refreshedSnapshot: snapshot),
+        analytics: StubAnalytics(),
+        notificationScheduler: StubNotificationScheduler(),
+        defaults: defaults
+    )
+
+    await viewModel.start()
+
+    #expect(viewModel.menuBarLabel == .text("See you in 2030!"))
+}
+
 private struct StubRepository: WorldCupDataProviding {
     var cachedSnapshot: WorldCupSnapshot?
     var refreshedSnapshot: WorldCupSnapshot?

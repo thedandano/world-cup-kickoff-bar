@@ -10,13 +10,19 @@ final class WorldCupBarViewModel {
     private(set) var contentState: WorldCupContentState = .loading
     var displayMode: DisplayMode {
         didSet {
-            UserDefaults.standard.set(displayMode.rawValue, forKey: UserDefaultsKeys.displayMode)
+            defaults.set(displayMode.rawValue, forKey: UserDefaultsKeys.displayMode)
             analytics.recordUserAction("display_mode_changed", properties: ["mode": displayMode.rawValue])
+        }
+    }
+    var vsMarkStyle: VSMarkStyle {
+        didSet {
+            defaults.set(vsMarkStyle.rawValue, forKey: UserDefaultsKeys.vsMarkStyle)
+            analytics.recordUserAction("vs_mark_style_changed", properties: ["style": vsMarkStyle.rawValue])
         }
     }
     var followedCountryCodes: Set<String> {
         didSet {
-            UserDefaults.standard.set(Array(followedCountryCodes).sorted(), forKey: UserDefaultsKeys.followedCountryCodes)
+            defaults.set(Array(followedCountryCodes).sorted(), forKey: UserDefaultsKeys.followedCountryCodes)
             analytics.recordUserAction("followed_countries_changed", properties: ["count": "\(followedCountryCodes.count)"])
             updateDisplayState()
             Task { await scheduleNotifications() }
@@ -24,13 +30,13 @@ final class WorldCupBarViewModel {
     }
     var analyticsEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(analyticsEnabled, forKey: UserDefaultsKeys.analyticsEnabled)
+            defaults.set(analyticsEnabled, forKey: UserDefaultsKeys.analyticsEnabled)
             analytics.setAnalyticsEnabled(analyticsEnabled)
         }
     }
     var notificationMinutesBefore: Int {
         didSet {
-            UserDefaults.standard.set(
+            defaults.set(
                 notificationMinutesBefore,
                 forKey: UserDefaultsKeys.notificationMinutesBefore
             )
@@ -46,22 +52,10 @@ final class WorldCupBarViewModel {
     private let formatter = MatchFormatter()
     private let analytics: any WorldCupAnalyticsTracking
     private let notificationScheduler: any NotificationScheduling
+    private let defaults: UserDefaults
     private var pollingTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var hasStarted = false
-
-    var menuBarTitle: String {
-        switch contentState {
-        case .loading:
-            return "Loading..."
-        case .unavailable:
-            return "World Cup"
-        case .postTournament:
-            return "See you in 2030!"
-        case .content:
-            return formatter.menuBarTitle(for: displayState, displayMode: displayMode)
-        }
-    }
 
     var highlightedMatch: WorldCupMatch? {
         displayState.match
@@ -113,21 +107,27 @@ final class WorldCupBarViewModel {
     init(
         repository: any WorldCupDataProviding,
         analytics: any WorldCupAnalyticsTracking,
-        notificationScheduler: any NotificationScheduling = NotificationScheduler.shared
+        notificationScheduler: any NotificationScheduling = NotificationScheduler.shared,
+        defaults: UserDefaults = .standard
     ) {
         self.repository = repository
         self.analytics = analytics
         self.notificationScheduler = notificationScheduler
+        self.defaults = defaults
 
-        let storedDisplayMode = UserDefaults.standard.string(forKey: UserDefaultsKeys.displayMode)
+        let storedDisplayMode = defaults.string(forKey: UserDefaultsKeys.displayMode)
             .flatMap(DisplayMode.init(rawValue:))
         self.displayMode = storedDisplayMode ?? .abbreviations
 
-        let storedCodes = UserDefaults.standard.stringArray(forKey: UserDefaultsKeys.followedCountryCodes)
+        let storedVSMarkStyle = defaults.string(forKey: UserDefaultsKeys.vsMarkStyle)
+            .flatMap(VSMarkStyle.init(rawValue:))
+        self.vsMarkStyle = storedVSMarkStyle ?? .ring
+
+        let storedCodes = defaults.stringArray(forKey: UserDefaultsKeys.followedCountryCodes)
         self.followedCountryCodes = Set(storedCodes ?? ["USA", "MEX", "CAN"])
 
-        self.analyticsEnabled = UserDefaults.standard.object(forKey: UserDefaultsKeys.analyticsEnabled) as? Bool ?? true
-        self.notificationMinutesBefore = UserDefaults.standard.object(
+        self.analyticsEnabled = defaults.object(forKey: UserDefaultsKeys.analyticsEnabled) as? Bool ?? true
+        self.notificationMinutesBefore = defaults.object(
             forKey: UserDefaultsKeys.notificationMinutesBefore
         ) as? Int ?? 15
         self.analytics.setAnalyticsEnabled(analyticsEnabled)
@@ -288,8 +288,37 @@ final class WorldCupBarViewModel {
     }
 }
 
+// MARK: - Menu bar label helpers
+
+extension WorldCupBarViewModel {
+    var menuBarTitle: String {
+        switch contentState {
+        case .loading:
+            return "Loading..."
+        case .unavailable:
+            return "World Cup"
+        case .postTournament:
+            return "See you in 2030!"
+        case .content:
+            return formatter.menuBarTitle(for: displayState, displayMode: displayMode)
+        }
+    }
+
+    var menuBarLabel: MenuBarLabelContent {
+        guard case .content = contentState, case .upcoming(let match) = displayState else {
+            return .text(menuBarTitle)
+        }
+        return .matchup(
+            home: formatter.teamLabel(for: match.home, displayMode: displayMode),
+            away: formatter.teamLabel(for: match.away, displayMode: displayMode),
+            detail: formatter.localTime(for: match.kickoffDate)
+        )
+    }
+}
+
 private enum UserDefaultsKeys {
     static let displayMode = "displayMode"
+    static let vsMarkStyle = "vsMarkStyle"
     static let followedCountryCodes = "followedCountryCodes"
     static let analyticsEnabled = "analyticsEnabled"
     static let notificationMinutesBefore = "notificationMinutesBefore"
@@ -300,6 +329,11 @@ enum WorldCupContentState: Equatable {
     case content(MatchDisplayState)
     case unavailable
     case postTournament
+}
+
+enum MenuBarLabelContent: Equatable {
+    case text(String)
+    case matchup(home: String, away: String, detail: String)
 }
 
 enum RefreshState: Equatable {

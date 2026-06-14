@@ -61,22 +61,14 @@ struct MenuBarDropdownView: View {
 
     private var highlightedMatchSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center) {
-                LiveRail(text: railTitle, isLive: spotlightIsLive)
-
-                Spacer()
-
-                Text(railDetail)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(WCBColor.secondaryLabel)
-                    .lineLimit(1)
-            }
+            railHeader
 
             if let match = spotlightMatch {
                 HeroMatchRow(
                     match: match,
                     centerText: centerStatusText(for: match),
-                    showLivePill: match.status.isLive
+                    showLivePill: match.status.isLive,
+                    style: viewModel.vsMarkStyle
                 )
             } else {
                 Text(highlightSubtitle)
@@ -88,6 +80,19 @@ struct MenuBarDropdownView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(panelBackground)
+    }
+
+    private var railHeader: some View {
+        HStack(alignment: .center) {
+            LiveRail(text: railTitle, isLive: spotlightIsLive)
+
+            Spacer()
+
+            Text(railDetail)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(WCBColor.secondaryLabel)
+                .lineLimit(1)
+        }
     }
 
     private var spotlight: MatchDisplayState {
@@ -135,7 +140,7 @@ struct MenuBarDropdownView: View {
                 ForEach(matches.prefix(5)) { match in
                     MatchRow(
                         match: match,
-                        title: viewModel.dropdownMatchupTitle(for: match),
+                        style: viewModel.vsMarkStyle,
                         time: viewModel.scheduledTime(for: match.kickoffDate)
                     )
 
@@ -316,46 +321,11 @@ private struct StatusPill: View {
     }
 }
 
-private struct MatchRow: View {
-    let match: WorldCupMatch
-    let title: String
-    let time: String
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                Text(match.venue)
-                    .font(WCBFont.codeMono)
-                    .foregroundStyle(WCBColor.secondaryLabel)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 12)
-
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(time)
-                    .font(.system(size: 12, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(WCBColor.label)
-
-                Text(match.status == .scheduled ? "Local" : "")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(WCBColor.secondaryLabel)
-            }
-        }
-        .padding(.vertical, 9)
-    }
-}
-
 private struct HeroMatchRow: View {
     let match: WorldCupMatch
     let centerText: String
     let showLivePill: Bool
+    let style: VSMarkStyle
 
     var body: some View {
         HStack(alignment: .center, spacing: 18) {
@@ -368,10 +338,8 @@ private struct HeroMatchRow: View {
                         .monospacedDigit()
                         .foregroundStyle(Color.green)
                 } else {
-                    Text("vs")
-                        .font(.system(size: 20, weight: .semibold))
+                    VSMark(style: style, size: 22)
                         .foregroundStyle(WCBColor.secondaryLabel)
-                        .tracking(1)
                 }
 
                 Text(centerText)

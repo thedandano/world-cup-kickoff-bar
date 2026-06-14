@@ -47,9 +47,7 @@ struct WorldCupBarApp: App {
                     await NotificationScheduler.shared.requestPermission()
                 }
         } label: {
-            Text(viewModel.menuBarTitle)
-                .font(.system(size: 13, weight: .semibold, design: .default))
-                .monospacedDigit()
+            MenuBarLabel(viewModel: viewModel)
                 .background(OpenWindowListener())
                 .task {
                     await viewModel.start()
@@ -71,6 +69,28 @@ struct WorldCupBarApp: App {
         return applicationSupport
             .appending(path: "WorldCupBar")
             .appending(path: "snapshot-cache.json")
+    }
+}
+
+// Composes the menu-bar label as a single Text — MenuBarExtra renders only the
+// first Text/Image in its label (a composite HStack or an inline image is
+// dropped), so an upcoming match inserts the style's text separator
+// (VSMarkStyle.textSeparator) between the team labels; every other state keeps
+// the plain title. The drawn VSMark is used in the popover, not here.
+private struct MenuBarLabel: View {
+    var viewModel: WorldCupBarViewModel
+
+    var body: some View {
+        Group {
+            switch viewModel.menuBarLabel {
+            case .text(let title):
+                Text(title)
+            case .matchup(let home, let away, let detail):
+                Text("\(home) \(viewModel.vsMarkStyle.textSeparator) \(away)  \(detail)")
+            }
+        }
+        .font(.system(size: 13, weight: .semibold))
+        .monospacedDigit()
     }
 }
 

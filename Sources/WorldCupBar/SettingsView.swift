@@ -77,28 +77,61 @@ private struct DisplayPanel: View {
 
     var body: some View {
         PanelScrollView(title: "Display", subtitle: "Choose the compact match label.") {
-            SettingsCard {
-                HStack(alignment: .center, spacing: WCBSpacing.lg) {
-                    VStack(alignment: .leading, spacing: WCBSpacing.xs) {
-                        Text("Display mode")
-                            .font(WCBFont.rowPrimary)
-                        Text("Show team codes or flag emoji.")
-                            .font(WCBFont.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Picker("Display mode", selection: $viewModel.displayMode) {
-                        Text("Abbreviations").tag(DisplayMode.abbreviations)
-                        Text("Flags").tag(DisplayMode.flags)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .tint(WCBColor.accent)
-                    .frame(width: 250)
-                    .help("Controls whether compact match labels use team codes or flags.")
+            displayModeCard
+            separatorCard
+        }
+    }
+
+    private var displayModeCard: some View {
+        SettingsCard {
+            HStack(alignment: .center, spacing: WCBSpacing.lg) {
+                cardLabel("Display mode", "Show team codes or flag emoji.")
+                Spacer()
+                Picker("Display mode", selection: $viewModel.displayMode) {
+                    Text("Abbreviations").tag(DisplayMode.abbreviations)
+                    Text("Flags").tag(DisplayMode.flags)
                 }
-                .padding(WCBSpacing.md)
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .tint(WCBColor.accent)
+                .frame(width: 250)
+                .help("Controls whether compact match labels use team codes or flags.")
             }
+            .padding(WCBSpacing.md)
+        }
+    }
+
+    private var separatorCard: some View {
+        SettingsCard {
+            HStack(alignment: .center, spacing: WCBSpacing.lg) {
+                cardLabel("Match separator", "The \u{201C}vs\u{201D} mark shown between teams.")
+                Spacer()
+                VSMark(style: viewModel.vsMarkStyle, size: 24)
+                    .foregroundStyle(WCBColor.accent)
+                    .frame(width: 44, height: 34)
+                Picker("Match separator", selection: $viewModel.vsMarkStyle) {
+                    ForEach(VSMarkStyle.allCases, id: \.self) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .tint(WCBColor.accent)
+                .frame(width: 250)
+                .help("Choose the mark drawn between the two teams.")
+            }
+            .padding(WCBSpacing.md)
+        }
+    }
+
+    @ViewBuilder
+    private func cardLabel(_ title: String, _ subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: WCBSpacing.xs) {
+            Text(title)
+                .font(WCBFont.rowPrimary)
+            Text(subtitle)
+                .font(WCBFont.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }
