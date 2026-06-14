@@ -5,13 +5,9 @@ on:
     tags:
       - 'v*.*.*'
 
-env:
-  SCHEME: WorldCupBar
-  BUNDLE_ID: com.michilotl.WorldCupBar
-
 jobs:
   release:
-    name: Build, Sign, Notarize, Release
+    name: Build, Sign, Notarize, Release (DMG)
     runs-on: macos-15
     env:
       # Pin to env var so shell steps never interpolate the ref directly
@@ -21,47 +17,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 1. Resolve dependencies ──────────────────────────────────────────
       - name: Resolve Swift packages
         run: swift package resolve
 
-      # ── 2. Lint ──────────────────────────────────────────────────────────
       - name: SwiftLint
         run: |
           brew install swiftlint
           swiftlint lint --strict
 
-      # ── 3. Test ──────────────────────────────────────────────────────────
       - name: Run tests
         run: swift test
 
-      # ── 4. Build release binary ──────────────────────────────────────────
-      - name: Build release
-        run: swift build -c release --arch arm64 --arch x86_64
-
-      # ── 5. Assemble .app bundle ──────────────────────────────────────────
-      - name: Assemble app bundle
-        run: |
-          VERSION="${GIT_TAG#v}"
-          APP_DIR="build/WorldCupBar.app"
-          CONTENTS="${APP_DIR}/Contents"
-
-          mkdir -p "${CONTENTS}/MacOS"
-          mkdir -p "${CONTENTS}/Resources"
-
-          # Binary (universal)
-          cp .build/apple/Products/Release/WorldCupBar "${CONTENTS}/MacOS/WorldCupBar"
-
-          # Info.plist — inject version from git tag
-          sed "s/<string>1.0.0<\/string>/<string>${VERSION}<\/string>/" \
-              Sources/WorldCupBar/Info.plist > "${CONTENTS}/Info.plist"
-
-          # Entitlements (for signing)
-          cp Sources/WorldCupBar/WorldCupBar.entitlements build/WorldCupBar.entitlements
-
-          echo "Assembled WorldCupBar.app at ${APP_DIR}"
-
-      # ── 6. Import Developer ID certificate ──────────────────────────────
+      # ── Import Developer ID certificate into a temp keychain ──────────────
       - name: Import signing certificate
         env:
           DEVELOPER_ID_CERT_BASE64: ${{ secrets.DEVELOPER_ID_CERT_BASE64 }}
@@ -70,91 +37,79 @@ jobs:
         run: |
           KEYCHAIN_PATH="$RUNNER_TEMP/ci.keychain-db"
           echo -n "$DEVELOPER_ID_CERT_BASE64" | base64 --decode -o "$RUNNER_TEMP/cert.p12"
-
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$RUNNER_TEMP/cert.p12" \
-            -P "$DEVELOPER_ID_CERT_PASSWORD" \
-            -A -t cert -f pkcs12 \
-            -k "$KEYCHAIN_PATH"
+            -P "$DEVELOPER_ID_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
-      # ── 7. Code sign ─────────────────────────────────────────────────────
-      - name: Code sign
+      # ── Build + bundle + Developer-ID sign (build-app.sh embeds Sparkle.framework,
+      #    copies resource bundles, fixes the rpath, signs with hardened runtime) ──
+      - name: Build, bundle & sign app
         env:
-          DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+          SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+          ENTITLEMENTS: Sources/WorldCupBar/WorldCupBar.entitlements
+          UNIVERSAL: "1"
         run: |
-          codesign \
-            --sign "$DEVELOPER_ID_IDENTITY" \
-            --options runtime \
-            --entitlements build/WorldCupBar.entitlements \
-            --deep \
-            --force \
-            --timestamp \
-            "build/WorldCupBar.app"
+          MARKETING_VERSION="${GIT_TAG#v}" ./scripts/build-app.sh
 
-      # ── 8. Zip for notarization ──────────────────────────────────────────
-      - name: Zip for notarization
-        run: |
-          ditto -c -k --keepParent "build/WorldCupBar.app" "build/WorldCupBar-notarize.zip"
-
-      # ── 9. Notarize ──────────────────────────────────────────────────────
-      - name: Notarize
+      # ── Notarize the app and staple it (so it's trusted offline once dragged out) ──
+      - name: Notarize & staple app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          xcrun notarytool submit "build/WorldCupBar-notarize.zip" \
-            --apple-id "$APPLE_ID" \
-            --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_PASSWORD" \
-            --wait
+          ditto -c -k --keepParent "dist/World Cup Bar.app" "$RUNNER_TEMP/app.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/app.zip" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "dist/World Cup Bar.app"
 
-      # ── 10. Staple notarization ticket ──────────────────────────────────
-      - name: Staple
-        run: xcrun stapler staple "build/WorldCupBar.app"
+      # ── Package the (stapled) app into a drag-to-Applications DMG ─────────
+      - name: Package DMG
+        run: ./scripts/make-dmg.sh
 
-      # ── 11. Zip final release ────────────────────────────────────────────
-      - name: Create release zip
+      # ── Sign, notarize, and staple the DMG itself ────────────────────────
+      - name: Sign, notarize & staple DMG
+        env:
+          DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          VERSION="${GIT_TAG#v}"
-          ditto -c -k --keepParent "build/WorldCupBar.app" "build/WorldCupBar-${VERSION}.zip"
+          DMG="dist/WorldCupBar-${GIT_TAG#v}.dmg"
+          codesign --force --sign "$DEVELOPER_ID_IDENTITY" --timestamp "$DMG"
+          xcrun notarytool submit "$DMG" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "$DMG"
 
-      # ── 12. Generate Sparkle appcast ─────────────────────────────────────
-      - name: Generate appcast
+      # ── Generate the Sparkle appcast (signs the DMG with your EdDSA key) ──
+      - name: Generate Sparkle appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
-          VERSION="${GIT_TAG#v}"
-          RELEASE_NOTES_URL="https://michilotl.github.io/world-cup-bar/release-notes/${VERSION}.html"
-
-          # Write private key to temp file
-          echo -n "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_private_key"
-
-          # Download Sparkle binary tools
-          SPARKLE_VERSION=$(cat Package.resolved | python3 -c \
-            "import sys, json; pkgs=json.load(sys.stdin)['pins']; \
-            print(next(p['state']['version'] for p in pkgs if 'sparkle' in p['location'].lower()))")
+          echo -n "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_key"
+          SPARKLE_VERSION=$(python3 -c \
+            "import json; pins=json.load(open('Package.resolved'))['pins']; \
+            print(next(p['state']['version'] for p in pins if 'sparkle' in p['location'].lower()))")
           curl -Lso "$RUNNER_TEMP/sparkle.tar.xz" \
             "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
           mkdir -p "$RUNNER_TEMP/sparkle"
           tar -xJf "$RUNNER_TEMP/sparkle.tar.xz" -C "$RUNNER_TEMP/sparkle"
-
+          # generate_appcast scans dist/ for the .dmg, computes its EdDSA signature + version
           "$RUNNER_TEMP/sparkle/bin/generate_appcast" \
-            --ed-key-file "$RUNNER_TEMP/sparkle_private_key" \
+            --ed-key-file "$RUNNER_TEMP/sparkle_key" \
             --link "https://michilotl.github.io/world-cup-bar" \
-            --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/" \
-            "build/"
+            --download-url-prefix "https://github.com/${{ github.repository }}/releases/download/${GIT_TAG}/" \
+            dist/
+          cp dist/appcast.xml appcast.xml
 
-          cp build/appcast.xml appcast.xml
-
-      # ── 13. Create GitHub Release ────────────────────────────────────────
+      # ── Publish the DMG + appcast as a GitHub Release ────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/WorldCupBar-*.zip
+            dist/WorldCupBar-*.dmg
             appcast.xml
           generate_release_notes: true

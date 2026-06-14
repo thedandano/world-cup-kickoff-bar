@@ -31,6 +31,6 @@
     <key>SUFeedURL</key>
     <string>https://michilotl.github.io/world-cup-bar/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>REPLACE_WITH_ED25519_PUBLIC_KEY</string>
+    <string>5iRqKtPB74D/8pZt9Eui2t64dcElyfC1PdCm9+hgHxM=</string>
 </dict>
 </plist>
