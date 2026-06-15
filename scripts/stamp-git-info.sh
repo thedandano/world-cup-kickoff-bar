@@ -6,7 +6,11 @@
 set -u
 
 PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
-DESCRIBE="$(git -C "${SRCROOT}" describe --tags --always --abbrev=7 2>/dev/null || echo unknown)"
+# Restrict to the git-describe character set so the value can't alter the
+# PlistBuddy command string below (defense-in-depth: the expansion is already
+# double-quoted and git refnames can't contain shell metacharacters).
+DESCRIBE="$(git -C "${SRCROOT}" describe --tags --always --abbrev=7 2>/dev/null | tr -cd 'A-Za-z0-9._+/-')"
+[ -n "${DESCRIBE}" ] || DESCRIBE="unknown"
 
 # "dirty" = uncommitted changes to build inputs (Sources, project.yml).
 # Untracked docs and gitignored artifacts (.build, dist, *.xcodeproj) don't count.
