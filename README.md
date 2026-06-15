@@ -52,7 +52,7 @@ The app is signed and **notarized by Apple**, so it opens with no scary warnings
 2. Under **"Open at Login"**, click **+**
 3. Pick **World Cup Bar**
 
-Done — it'll start with your Mac from now on.
+Done! It'll start with your Mac from now on.
 
 ---
 
