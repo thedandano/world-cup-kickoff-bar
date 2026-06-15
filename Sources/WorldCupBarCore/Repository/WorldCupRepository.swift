@@ -2,7 +2,7 @@ import Foundation
 
 public protocol WorldCupDataProviding: Sendable {
     func loadCachedSnapshot() throws -> WorldCupSnapshot?
-    func refreshSnapshot(trigger: RefreshTrigger) async throws -> WorldCupSnapshot
+    func refreshSnapshot() async throws -> WorldCupSnapshot
 }
 
 public struct WorldCupRepository: WorldCupDataProviding, Sendable {
@@ -10,7 +10,6 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
     private let mapper: WorldCup26Mapper
     private let store: WorldCupSnapshotStore
     private let retryPolicy: RetryPolicy
-    private let telemetry: any WorldCupTelemetry
     private let now: @Sendable () -> Date
 
     public init(
@@ -18,60 +17,30 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
         mapper: WorldCup26Mapper,
         store: WorldCupSnapshotStore,
         retryPolicy: RetryPolicy = RetryPolicy(),
-        telemetry: any WorldCupTelemetry = NoOpWorldCupTelemetry(),
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.dataSource = dataSource
         self.mapper = mapper
         self.store = store
         self.retryPolicy = retryPolicy
-        self.telemetry = telemetry
         self.now = now
     }
 
     public func loadCachedSnapshot() throws -> WorldCupSnapshot? {
-        let snapshot = try store.load()
-        if let snapshot {
-            telemetry.recordCacheLoaded(matchCount: snapshot.matches.count, teamCount: snapshot.countries.count)
-        }
-        return snapshot
+        try store.load()
     }
 
-    public func refreshSnapshot(trigger: RefreshTrigger) async throws -> WorldCupSnapshot {
-        telemetry.recordRefreshStarted(trigger: trigger)
-        let start = ContinuousClock.now
-        let hasCache = (try? store.load()) != nil
-
-        do {
-            let result = try await retryPolicy.execute(
-                operation: fetchAndMapSnapshot,
-                shouldRetry: shouldRetry(error:)
-            )
-            let cached = try? store.load()
-            if let cached, cached.matchesContentEqual(to: result.value) {
-                telemetry.recordRefreshSucceeded(
-                    snapshot: cached,
-                    latency: start.duration(to: .now),
-                    attemptCount: result.attemptCount
-                )
-                return cached
-            }
-            try store.save(result.value)
-            telemetry.recordRefreshSucceeded(
-                snapshot: result.value,
-                latency: start.duration(to: .now),
-                attemptCount: result.attemptCount
-            )
-            return result.value
-        } catch {
-            telemetry.recordRefreshFailed(
-                error: error,
-                latency: start.duration(to: .now),
-                attemptCount: retryAttempts(from: error),
-                hasCachedSnapshot: hasCache
-            )
-            throw error
+    public func refreshSnapshot() async throws -> WorldCupSnapshot {
+        let result = try await retryPolicy.execute(
+            operation: fetchAndMapSnapshot,
+            shouldRetry: shouldRetry(error:)
+        )
+        let cached = try? store.load()
+        if let cached, cached.matchesContentEqual(to: result.value) {
+            return cached
         }
+        try store.save(result.value)
+        return result.value
     }
 
     private func fetchAndMapSnapshot() async throws -> WorldCupSnapshot {
@@ -110,14 +79,4 @@ public struct WorldCupRepository: WorldCupDataProviding, Sendable {
         return .noRetry
     }
 
-    private func retryAttempts(from error: Error) -> Int {
-        if let dataError = error as? WorldCupDataError,
-           case .httpStatus = dataError {
-            return retryPolicy.maxAttempts
-        }
-        if error is URLError {
-            return retryPolicy.maxAttempts
-        }
-        return 1
-    }
 }

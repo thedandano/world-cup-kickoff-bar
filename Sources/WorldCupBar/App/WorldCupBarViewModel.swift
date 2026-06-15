@@ -133,15 +133,11 @@ final class WorldCupBarViewModel {
             refreshState = .usingCachedData("Using cached match data until live refresh completes.")
         }
 
-        await refresh(trigger: .appLaunch)
+        await refresh()
         restartPolling()
     }
 
     func refresh() async {
-        await refresh(trigger: .manual)
-    }
-
-    func refresh(trigger: RefreshTrigger) async {
         guard refreshTask == nil else {
             return
         }
@@ -149,15 +145,15 @@ final class WorldCupBarViewModel {
         refreshState = .refreshing
         let task = Task { [weak self] in
             guard let self else { return }
-            await self.performRefresh(trigger: trigger)
+            await self.performRefresh()
         }
         refreshTask = task
         await task.value
     }
 
-    private func performRefresh(trigger: RefreshTrigger) async {
+    private func performRefresh() async {
         do {
-            let snapshot = try await repository.refreshSnapshot(trigger: trigger)
+            let snapshot = try await repository.refreshSnapshot()
             await MainActor.run {
                 self.apply(snapshot: snapshot)
                 self.refreshState = .idle
@@ -259,7 +255,7 @@ final class WorldCupBarViewModel {
             while !Task.isCancelled {
                 let delay = self.nextPollingInterval
                 try? await Task.sleep(for: delay)
-                await self.refresh(trigger: .automatic)
+                await self.refresh()
             }
         }
     }

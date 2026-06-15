@@ -30,14 +30,13 @@ WorldCupBarCore   — pure Swift, no UI, no external deps
                   MatchDisplayState, DisplayMode, VSMarkStyle
   DataSource/     WorldCupDataSource (port), WorldCup26DataSource (adapter), WorldCup26Mapper
   Repository/     WorldCupRepository, WorldCupSnapshotStore, RetryPolicy, MatchDataProvider (deprecated alias)
-  Services/       MatchSelectionService, MatchFormatter, WorldCupTelemetry
+  Services/       MatchSelectionService, MatchFormatter
 
 WorldCupBar       — SwiftUI app, depends on Core + Sparkle
   App/            WorldCupBarApp (@main), AppDelegate, WorldCupBarViewModel
   MenuBar/        MenuBarDropdownView, MatchRow, VSMark
   Settings/       SettingsView
   Notifications/  NotificationScheduler
-  Analytics/      WorldCupMonitoring (on-device os.log event logging; no external analytics)
   Updates/        UpdaterViewModel
   DesignSystem/   WorldCupBarTheme, VisualEffectView
 ```
