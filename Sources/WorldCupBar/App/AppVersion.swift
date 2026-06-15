@@ -43,16 +43,26 @@ struct AppVersion {
 
 #if DEBUG
 private extension AppVersion {
-    /// Reads `git describe` at runtime, scoped to this checkout. Only reached by
-    /// the non-sandboxed dev binary (the sandboxed app can't exec git).
+    /// Reads `git describe` at runtime for the non-sandboxed dev binary
+    /// (`swift run`). Anchors on the working directory first — that's the repo
+    /// root when the binary is launched from it — then on this file's directory.
+    /// (`#filePath` can compile to a relative path, so it can't be the only
+    /// anchor.) The sandboxed app never reaches here; it uses the Info.plist
+    /// stamp.
     static func runtimeDescribe() -> AppVersion? {
-        let sourceDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
-        guard let root = git(["-C", sourceDir, "rev-parse", "--show-toplevel"]), !root.isEmpty,
-              let describe = git(["-C", root, "describe", "--tags", "--always", "--abbrev=7"]),
-              !describe.isEmpty
-        else { return nil }
-        let status = git(["-C", root, "status", "--porcelain", "--", "Sources", "project.yml"]) ?? ""
-        return AppVersion(describe: describe, dirty: !status.isEmpty)
+        let candidates = [
+            FileManager.default.currentDirectoryPath,
+            URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
+        ]
+        for dir in candidates {
+            guard let root = git(["-C", dir, "rev-parse", "--show-toplevel"]), !root.isEmpty,
+                  let describe = git(["-C", root, "describe", "--tags", "--always", "--abbrev=7"]),
+                  !describe.isEmpty
+            else { continue }
+            let status = git(["-C", root, "status", "--porcelain", "--", "Sources", "project.yml"]) ?? ""
+            return AppVersion(describe: describe, dirty: !status.isEmpty)
+        }
+        return nil
     }
 
     static func git(_ arguments: [String]) -> String? {
