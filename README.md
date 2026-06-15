@@ -38,7 +38,7 @@ No browser tab. No Dock clutter. Just a tiny status that's always there when you
 
 ## Install
 
-> **Requires macOS 14 (Sonoma) or later.**
+**Requires macOS 14 (Sonoma) or later.**
 
 1. Download the latest **`WorldCupBar-x.y.z.dmg`** from the [Releases page](https://github.com/thedandano/world-cup-kickoff-bar/releases).
 2. Open the DMG and **drag World Cup Bar onto the Applications shortcut**.
