@@ -23,19 +23,13 @@ struct WorldCupBarApp: App {
         )
         updaterController = controller
         _updaterViewModel = State(wrappedValue: UpdaterViewModel(updater: controller.updater))
-        let monitoring = WorldCupMonitoringService(configuration: .fromEnvironment())
         let repository = WorldCupRepository(
             dataSource: WorldCup26DataSource(),
             mapper: WorldCup26Mapper(),
             store: WorldCupSnapshotStore(fileURL: Self.snapshotCacheURL),
-            telemetry: monitoring
+            telemetry: WorldCupMonitoringService()
         )
-        _viewModel = State(
-            wrappedValue: WorldCupBarViewModel(
-                repository: repository,
-                analytics: monitoring
-            )
-        )
+        _viewModel = State(wrappedValue: WorldCupBarViewModel(repository: repository))
     }
 
     var body: some Scene {

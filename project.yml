@@ -20,9 +20,6 @@ packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: "2.0.0"
-  TelemetryDeck:
-    url: https://github.com/TelemetryDeck/SwiftSDK
-    exactVersion: "2.14.0"
 
 targets:
   # ── Pure-Swift domain layer (no UI) ─────────────────────────────────────
@@ -48,8 +45,6 @@ targets:
       - target: WorldCupBarCore
       - package: Sparkle
         product: Sparkle
-      - package: TelemetryDeck
-        product: TelemetryDeck
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.michilotl.WorldCupBar

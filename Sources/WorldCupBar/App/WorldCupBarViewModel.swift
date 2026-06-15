@@ -11,30 +11,18 @@ final class WorldCupBarViewModel {
     var displayMode: DisplayMode {
         didSet {
             defaults.set(displayMode.rawValue, forKey: UserDefaultsKeys.displayMode)
-            analytics.recordUserAction("display_mode_changed", properties: ["mode": displayMode.rawValue])
         }
     }
     var vsMarkStyle: VSMarkStyle {
         didSet {
             defaults.set(vsMarkStyle.rawValue, forKey: UserDefaultsKeys.vsMarkStyle)
-            analytics.recordUserAction("vs_mark_style_changed", properties: ["style": vsMarkStyle.rawValue])
         }
     }
     var followedCountryCodes: Set<String> {
         didSet {
             defaults.set(Array(followedCountryCodes).sorted(), forKey: UserDefaultsKeys.followedCountryCodes)
-            analytics.recordUserAction(
-                "followed_countries_changed",
-                properties: ["count": "\(followedCountryCodes.count)"]
-            )
             updateDisplayState()
             Task { await scheduleNotifications() }
-        }
-    }
-    var analyticsEnabled: Bool {
-        didSet {
-            defaults.set(analyticsEnabled, forKey: UserDefaultsKeys.analyticsEnabled)
-            analytics.setAnalyticsEnabled(analyticsEnabled)
         }
     }
     var notificationMinutesBefore: Int {
@@ -53,7 +41,6 @@ final class WorldCupBarViewModel {
     private let repository: any WorldCupDataProviding
     private let selectionService = MatchSelectionService()
     private let formatter = MatchFormatter()
-    private let analytics: any WorldCupAnalyticsTracking
     private let notificationScheduler: any NotificationScheduling
     private let defaults: UserDefaults
     private var pollingTask: Task<Void, Never>?
@@ -109,12 +96,10 @@ final class WorldCupBarViewModel {
 
     init(
         repository: any WorldCupDataProviding,
-        analytics: any WorldCupAnalyticsTracking,
         notificationScheduler: any NotificationScheduling = NotificationScheduler.shared,
         defaults: UserDefaults = .standard
     ) {
         self.repository = repository
-        self.analytics = analytics
         self.notificationScheduler = notificationScheduler
         self.defaults = defaults
 
@@ -129,11 +114,9 @@ final class WorldCupBarViewModel {
         let storedCodes = defaults.stringArray(forKey: UserDefaultsKeys.followedCountryCodes)
         self.followedCountryCodes = Set(storedCodes ?? ["USA", "MEX", "CAN"])
 
-        self.analyticsEnabled = defaults.object(forKey: UserDefaultsKeys.analyticsEnabled) as? Bool ?? true
         self.notificationMinutesBefore = defaults.object(
             forKey: UserDefaultsKeys.notificationMinutesBefore
         ) as? Int ?? 15
-        self.analytics.setAnalyticsEnabled(analyticsEnabled)
     }
 
     func start() async {
@@ -323,7 +306,6 @@ private enum UserDefaultsKeys {
     static let displayMode = "displayMode"
     static let vsMarkStyle = "vsMarkStyle"
     static let followedCountryCodes = "followedCountryCodes"
-    static let analyticsEnabled = "analyticsEnabled"
     static let notificationMinutesBefore = "notificationMinutesBefore"
 }
 

@@ -38,7 +38,6 @@ struct SettingsView: View {
         case .display:       DisplayPanel(viewModel: viewModel)
         case .following:     FollowingPanel(viewModel: viewModel)
         case .notifications: NotificationsPanel(viewModel: viewModel)
-        case .analytics:     AnalyticsPanel(viewModel: viewModel)
         case .data:          DataPanel(viewModel: viewModel, updaterViewModel: updaterViewModel)
         }
     }
@@ -47,14 +46,13 @@ struct SettingsView: View {
 // MARK: - Panel enum
 
 private enum SettingsPanel: CaseIterable, Hashable {
-    case display, notifications, following, analytics, data
+    case display, notifications, following, data
 
     var title: String {
         switch self {
         case .display:       return "Display"
         case .notifications: return "Notifications"
         case .following:     return "Following"
-        case .analytics:     return "Analytics"
         case .data:          return "Data"
         }
     }
@@ -64,7 +62,6 @@ private enum SettingsPanel: CaseIterable, Hashable {
         case .display:       return "menubar.rectangle"
         case .notifications: return "bell"
         case .following:     return "star"
-        case .analytics:     return "chart.bar"
         case .data:          return "arrow.clockwise.icloud"
         }
     }
@@ -260,32 +257,6 @@ private struct NotificationsPanel: View {
             .frame(width: 120)
         }
         .padding(WCBSpacing.medium)
-    }
-}
-
-private struct AnalyticsPanel: View {
-    @Bindable var viewModel: WorldCupBarViewModel
-
-    var body: some View {
-        PanelScrollView(title: "Analytics", subtitle: "Control product analytics.") {
-            SettingsCard {
-                HStack(spacing: WCBSpacing.medium) {
-                    VStack(alignment: .leading, spacing: WCBSpacing.extraSmall) {
-                        Text("Usage analytics")
-                            .font(WCBFont.rowPrimary)
-                        Text("Turn off product analytics any time.")
-                            .font(WCBFont.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Toggle("Usage analytics", isOn: $viewModel.analyticsEnabled)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .tint(WCBColor.accent)
-                }
-                .padding(WCBSpacing.medium)
-            }
-        }
     }
 }
 

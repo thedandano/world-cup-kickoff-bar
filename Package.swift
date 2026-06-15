@@ -18,7 +18,6 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/TelemetryDeck/SwiftSDK.git", exact: "2.14.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.0.0")
     ],
     targets: [
@@ -27,7 +26,6 @@ let package = Package(
             name: "WorldCupBar",
             dependencies: [
                 "WorldCupBarCore",
-                .product(name: "TelemetryDeck", package: "SwiftSDK"),
                 .product(name: "Sparkle", package: "Sparkle")
             ],
             exclude: ["Info.plist", "WorldCupBar.entitlements"]

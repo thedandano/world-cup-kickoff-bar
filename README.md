@@ -68,7 +68,7 @@ Click the status and open **Settings** to:
 
 ## Privacy
 
-Match data comes from <a href=https://worldcup26.ir target="_blank" rel="noopener noreferrer"> worldcup26.ir </a>.
+No personal data is collected, and there are **no analytics or third-party tracking SDKs** — nothing leaves your device. Your followed teams, preferences, and cached scores are stored locally. Match data comes from <a href=https://worldcup26.ir target="_blank" rel="noopener noreferrer"> worldcup26.ir </a>.
 
 ---
 
