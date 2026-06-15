@@ -26,8 +26,7 @@ struct WorldCupBarApp: App {
         let repository = WorldCupRepository(
             dataSource: WorldCup26DataSource(),
             mapper: WorldCup26Mapper(),
-            store: WorldCupSnapshotStore(fileURL: Self.snapshotCacheURL),
-            telemetry: WorldCupMonitoringService()
+            store: WorldCupSnapshotStore(fileURL: Self.snapshotCacheURL)
         )
         _viewModel = State(wrappedValue: WorldCupBarViewModel(repository: repository))
     }
