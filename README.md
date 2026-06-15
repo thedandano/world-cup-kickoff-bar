@@ -12,7 +12,7 @@
 
   <a href="https://www.buymeacoffee.com/CagXd3ZFyZ"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=CagXd3ZFyZ&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 
-  Live scores · Upcoming fixtures · Kickoff alerts — all from your menu bar. No browser required.
+  Live scores · Upcoming fixtures · Kickoff alerts all from your menu bar. No browser required.
 
 </div>
 
@@ -20,9 +20,9 @@
 
 ## What is it?
 
-World Cup Bar lives quietly in your Mac's menu bar and keeps you up to date on every match of the 2026 FIFA World Cup. Glance up to see the current score; click for upcoming fixtures and a countdown to the next kickoff. It nudges you with a notification before your team plays — so you never miss the whistle while you're heads-down working.
+World Cup Bar lives quietly in your Mac's menu bar and keeps you up to date on every match of the 2026 FIFA World Cup. Glance up to see the current score; click for upcoming fixtures and a countdown to the next kickoff. It nudges you with a notification before your team plays, so you never miss the whistle while you're heads-down working.
 
-No browser tab. No Dock clutter. Just a tiny ⚽ that's always there when you want it and invisible when you don't.
+No browser tab. No Dock clutter. Just a tiny status that's always there when you want it and ignorable when you don't.
 
 ## Why you'll like it
 
@@ -42,9 +42,9 @@ No browser tab. No Dock clutter. Just a tiny ⚽ that's always there when you wa
 
 1. Download the latest **`WorldCupBar-x.y.z.dmg`** from the [Releases page](https://github.com/thedandano/world-cup-kickoff-bar/releases).
 2. Open the DMG and **drag World Cup Bar onto the Applications shortcut**.
-3. Launch it — a ⚽ appears in your menu bar. Click it for scores and fixtures.
+3. Launch it a status appears in your menu bar. Click it for scores and fixtures.
 
-The app is signed and **notarized by Apple**, so it opens with no scary warnings — and it **updates itself** automatically when new versions ship.
+The app is signed and **notarized by Apple**, so it opens with no scary warnings, and it **updates itself** automatically when new versions ship.
 
 ### Launch it automatically when your Mac starts
 
@@ -58,18 +58,17 @@ Done — it'll start with your Mac from now on.
 
 ## Make it yours
 
-Click the ⚽ and open **Settings** to:
+Click the status and open **Settings** to:
 
 - **Follow teams** — pick who gets priority in the menu bar and dropdown
 - **Menu bar style** — show team codes (USA) or flag emoji (🇺🇸)
 - **Kickoff alerts** — choose your lead time, or turn them off
-- **Analytics** — leave on to help improve the app, or switch off anytime
 
 ---
 
 ## Privacy
 
-No personal data is collected. Your followed teams, preferences, and cached scores stay **on your device**. Optional, anonymous usage stats (app version and basic events only) are handled by [TelemetryDeck](https://telemetrydeck.com) and can be turned off completely in **Settings → Analytics**. Match data comes from [worldcup26.ir](https://worldcup26.ir).
+Match data comes from <a href=https://worldcup26.ir target="_blank" rel="noopener noreferrer"> worldcup26.ir </a>.
 
 ---
 
@@ -94,7 +93,7 @@ Strict MVVM with a `WorldCupBarCore` (pure logic) / `WorldCupBar` (SwiftUI) spli
 
 MIT — see [LICENSE](LICENSE).
 
-> **No warranty.** This software is provided as-is; the authors aren't responsible for any issues arising from its use.
+**No warranty.** This software is provided as-is; the authors aren't responsible for any issues arising from its use.
 
 ---
 
