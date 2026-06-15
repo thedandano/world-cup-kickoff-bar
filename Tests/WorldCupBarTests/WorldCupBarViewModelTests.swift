@@ -252,7 +252,7 @@ private struct StubRepository: WorldCupDataProviding {
         cachedSnapshot
     }
 
-    func refreshSnapshot(trigger _: RefreshTrigger) async throws -> WorldCupSnapshot {
+    func refreshSnapshot() async throws -> WorldCupSnapshot {
         if let refreshError {
             throw refreshError
         }

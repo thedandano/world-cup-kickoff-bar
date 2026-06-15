@@ -114,10 +114,10 @@ private func makeRepository(
     let dataSource = FakeWorldCupDataSource()
     let repository = makeRepository(dataSource: dataSource, fileURL: fileURL, now: clock)
 
-    let first = try await repository.refreshSnapshot(trigger: .manual)
+    let first = try await repository.refreshSnapshot()
     #expect(first.fetchedAt == firstDate)
 
-    let second = try await repository.refreshSnapshot(trigger: .manual)
+    let second = try await repository.refreshSnapshot()
     // Same DTOs → matchesContentEqual short-circuits → returns cached snapshot1
     #expect(second.fetchedAt == firstDate, "Expected cached fetchedAt firstDate but got \(second.fetchedAt)")
 }
@@ -135,7 +135,7 @@ private func makeRepository(
         fileURL: fileURL,
         now: { firstFetchDate }
     )
-    let snapshot1 = try await repo1.refreshSnapshot(trigger: .manual)
+    let snapshot1 = try await repo1.refreshSnapshot()
     #expect(snapshot1.matches[0].score == MatchScore(home: 1, away: 0))
 
     // Second refresh with a different score: 2-0
@@ -144,7 +144,7 @@ private func makeRepository(
         fileURL: fileURL,
         now: { secondFetchDate }
     )
-    let snapshot2 = try await repo2.refreshSnapshot(trigger: .manual)
+    let snapshot2 = try await repo2.refreshSnapshot()
     #expect(snapshot2.matches[0].score == MatchScore(home: 2, away: 0))
     #expect(snapshot2.fetchedAt == secondFetchDate)
     #expect(snapshot2 != snapshot1)
@@ -159,7 +159,7 @@ private func makeRepository(
     let repository = makeRepository(dataSource: dataSource, fileURL: fileURL, retryPolicy: retryPolicy)
 
     await #expect(throws: URLError.self) {
-        _ = try await repository.refreshSnapshot(trigger: .manual)
+        _ = try await repository.refreshSnapshot()
     }
 }
 
@@ -178,7 +178,7 @@ private func makeRepository(
     #expect(beforeRefresh == nil)
 
     // After a successful refresh, the store is populated
-    _ = try await repository.refreshSnapshot(trigger: .manual)
+    _ = try await repository.refreshSnapshot()
 
     let afterRefresh = try repository.loadCachedSnapshot()
     #expect(afterRefresh != nil)

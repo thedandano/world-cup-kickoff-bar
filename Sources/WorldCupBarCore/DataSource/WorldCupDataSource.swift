@@ -4,7 +4,7 @@ import Foundation
 /// return the raw DTOs; `WorldCupRepository` owns mapping, retry, caching, and
 /// change-detection.
 ///
-/// Failure contract: to participate in the repository's retry + telemetry,
+/// Failure contract: to participate in the repository's retry,
 /// adapters MUST surface failures as `URLError` (transport) or
 /// `WorldCupDataError.httpStatus(code:retryAfter:)` (HTTP). See
 /// `WorldCupRepository.shouldRetry`.
