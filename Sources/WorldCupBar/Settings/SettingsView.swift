@@ -10,14 +10,18 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsPanel.allCases, id: \.self, selection: $selectedPanel) { panel in
-                Label(panel.title, systemImage: panel.icon)
-                    .foregroundStyle(Color.primary)
-                    .tag(panel)
+            VStack(spacing: 0) {
+                List(SettingsPanel.allCases, id: \.self, selection: $selectedPanel) { panel in
+                    Label(panel.title, systemImage: panel.icon)
+                        .foregroundStyle(Color.primary)
+                        .tag(panel)
+                }
+                .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
+
+                versionFooter
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 180)
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
             .background(WCBVibrancyBackground().ignoresSafeArea())
         } detail: {
             ZStack {
@@ -30,6 +34,18 @@ struct SettingsView: View {
         .tint(WCBColor.accent)
         .frame(minWidth: 680, minHeight: 480)
         .background(SettingsWindowBackground().ignoresSafeArea())
+    }
+
+    private var versionFooter: some View {
+        VStack(spacing: 0) {
+            Divider()
+            Text(AppVersion.fromBundle().footer)
+                .font(WCBFont.caption)
+                .foregroundStyle(WCBColor.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, WCBSpacing.medium)
+                .padding(.vertical, WCBSpacing.small)
+        }
     }
 
     @ViewBuilder
