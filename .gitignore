@@ -12,3 +12,7 @@ DerivedData/
 
 # XcodeGen-generated project (regenerate with: xcodegen generate)
 /WorldCupBar.xcodeproj/
+.vscode
+
+# Generated at release time from the APPLE_TEAM_ID secret
+/ExportOptions.plist

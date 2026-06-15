@@ -70,19 +70,31 @@ jobs:
       - name: Archive
         env:
           DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           xcodebuild archive \
             -project WorldCupBar.xcodeproj -scheme WorldCupBar -configuration Release \
             -archivePath "$RUNNER_TEMP/WorldCupBar.xcarchive" \
             MARKETING_VERSION="${GIT_TAG#v}" CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$DEVELOPER_ID_IDENTITY"
+
+      - name: Generate ExportOptions.plist (team ID from secret)
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          PLIST="$RUNNER_TEMP/ExportOptions.plist"
+          plutil -create xml1 "$PLIST"
+          plutil -insert method -string developer-id "$PLIST"
+          plutil -insert teamID -string "$APPLE_TEAM_ID" "$PLIST"
+          plutil -insert signingStyle -string manual "$PLIST"
 
       - name: Export (developer-id)
         run: |
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/WorldCupBar.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist ExportOptions.plist
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
 
       - name: Notarize & staple app
         env:
