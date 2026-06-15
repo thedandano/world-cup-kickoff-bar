@@ -75,11 +75,12 @@ jobs:
             -P "$DEVELOPER_ID_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          # Leak-safe sanity check: print only the identity count (no names), then fail fast if zero.
-          echo "Valid codesigning identities in CI keychain:"
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | tail -1
-          if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -q '[1-9][0-9]* valid identities'; then
-            echo "::error::No valid Developer ID signing identity imported — the .p12 must contain BOTH the certificate and its private key."
+          # Leak-safe preflight: show identity TYPES (names/teams redacted), require a Developer ID Application cert.
+          echo "Codesigning identities in CI keychain (names/teams redacted):"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | sed -E 's/[0-9A-F]{40}/<hash>/g; s/"([A-Za-z ]+):[^"]*"/"\1: <redacted>"/g'
+          if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -q "Developer ID Application"; then
+            echo "::error::Imported .p12 has no 'Developer ID Application' certificate (you likely exported 'Apple Development'). Export the Developer ID Application cert WITH its private key and update DEVELOPER_ID_CERT_BASE64 / DEVELOPER_ID_CERT_PASSWORD."
             exit 1
           fi
 
