@@ -39,7 +39,7 @@ struct SettingsView: View {
     private var versionFooter: some View {
         VStack(spacing: 0) {
             Divider()
-            Text(AppVersion.current().footer)
+            Text(AppVersion.footer())
                 .font(WCBFont.caption)
                 .foregroundStyle(WCBColor.secondaryLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)

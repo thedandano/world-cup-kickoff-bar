@@ -1,55 +1,65 @@
 import Foundation
 
-/// The app's version string for the Settings footer, derived from `git describe`
-/// (e.g. `v1.1.1-5-g5450215`, or just `v1.1.1` exactly at a release tag).
+/// The version string shown in the Settings footer.
 ///
-/// The value is produced at build time by `scripts/stamp-git-info.sh`, which
-/// writes it into the bundle's Info.plist. When that stamp is absent — e.g.
-/// running the SwiftPM dev binary via `swift run`, which has no processed
-/// Info.plist — a DEBUG-only runtime `git describe` keeps the footer accurate in
-/// development. The sandboxed release app can't exec git, so it relies on the
-/// stamp.
-struct AppVersion {
-    /// Output of `git describe --tags --always`, or `unknown` with no git.
-    let describe: String
-    /// Whether build inputs (`Sources/`, `project.yml`) had uncommitted changes.
-    let dirty: Bool
+/// - **Release builds** show the marketing version that CI injects from the git
+///   tag (`CFBundleShortVersionString` ← `MARKETING_VERSION="${GIT_TAG#v}"`), so
+///   prod never depends on git history at build time — CI checkouts are shallow
+///   and have no tags, which would break `git describe`.
+/// - **Debug builds** show `git describe` for precise local build identity: the
+///   Info.plist value stamped by `scripts/stamp-git-info.sh` (used by the
+///   sandboxed local `.app`), or a runtime `git describe` for the non-sandboxed
+///   dev binary (`swift run`).
+enum AppVersion {
+    static func footer(bundle: Bundle = .main) -> String {
+        #if DEBUG
+        let resolved = debugVersion(bundle: bundle)
+        return devFooter(describe: resolved.describe, dirty: resolved.dirty)
+        #else
+        return releaseFooter(marketingVersion: marketingVersion(bundle: bundle))
+        #endif
+    }
 
-    /// The footer string: the git description with a `-dirty` marker appended.
-    var footer: String {
+    // MARK: - Pure formatters (unit-tested)
+
+    /// Release footer: the marketing version, e.g. `v1.1.2`.
+    static func releaseFooter(marketingVersion: String) -> String {
+        "v\(marketingVersion)"
+    }
+
+    /// Debug footer: `git describe` with a `-dirty` marker, e.g.
+    /// `v1.1.1-5-g5450215-dirty`, or just `v1.1.1` at a tag.
+    static func devFooter(describe: String, dirty: Bool) -> String {
         dirty ? "\(describe)-dirty" : describe
     }
 
-    /// Resolves the current version: the build-time Info.plist stamp first,
-    /// then a DEBUG-only runtime `git describe` fallback for dev binaries.
-    static func current(bundle: Bundle = .main) -> AppVersion {
-        if let stamped = bundle.object(forInfoDictionaryKey: "GitDescribe") as? String,
-           !stamped.isEmpty, stamped != "unknown" {
-            return AppVersion(describe: stamped, dirty: bundleDirty(bundle))
-        }
-        #if DEBUG
-        if let runtime = runtimeDescribe() {
-            return runtime
-        }
-        #endif
-        return AppVersion(describe: "unknown", dirty: false)
-    }
-
-    private static func bundleDirty(_ bundle: Bundle) -> Bool {
-        let value = bundle.object(forInfoDictionaryKey: "GitDirty")
-        return (value as? Bool) ?? ((value as? String) == "true")
+    static func marketingVersion(bundle: Bundle) -> String {
+        (bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0.0.0"
     }
 }
 
 #if DEBUG
-private extension AppVersion {
+extension AppVersion {
+    /// `git describe` + dirty for local builds: the Info.plist stamp first
+    /// (present in the sandboxed `.app`), then a runtime read (dev binary).
+    static func debugVersion(bundle: Bundle) -> (describe: String, dirty: Bool) {
+        if let stamped = bundle.object(forInfoDictionaryKey: "GitDescribe") as? String,
+           !stamped.isEmpty, stamped != "unknown" {
+            let value = bundle.object(forInfoDictionaryKey: "GitDirty")
+            let dirty = (value as? Bool) ?? ((value as? String) == "true")
+            return (stamped, dirty)
+        }
+        if let runtime = runtimeDescribe() {
+            return runtime
+        }
+        return ("unknown", false)
+    }
+
     /// Reads `git describe` at runtime for the non-sandboxed dev binary
-    /// (`swift run`). Anchors on the working directory first — that's the repo
-    /// root when the binary is launched from it — then on this file's directory.
-    /// (`#filePath` can compile to a relative path, so it can't be the only
-    /// anchor.) The sandboxed app never reaches here; it uses the Info.plist
-    /// stamp.
-    static func runtimeDescribe() -> AppVersion? {
+    /// (`swift run`). Anchors on the working directory first — the repo root
+    /// when launched from it — then this file's directory. (`#filePath` can
+    /// compile to a relative path, so it can't be the only anchor.)
+    static func runtimeDescribe() -> (describe: String, dirty: Bool)? {
         let candidates = [
             FileManager.default.currentDirectoryPath,
             URL(fileURLWithPath: #filePath).deletingLastPathComponent().path
@@ -60,7 +70,7 @@ private extension AppVersion {
                   !describe.isEmpty
             else { continue }
             let status = git(["-C", root, "status", "--porcelain", "--", "Sources", "project.yml"]) ?? ""
-            return AppVersion(describe: describe, dirty: !status.isEmpty)
+            return (describe, !status.isEmpty)
         }
         return nil
     }

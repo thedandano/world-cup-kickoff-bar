@@ -5,6 +5,10 @@
 # fails the build.
 set -u
 
+# Only the local Debug build needs git detail in the footer; release builds show
+# the marketing version (CFBundleShortVersionString) that CI injects from the tag.
+[ "${CONFIGURATION:-}" = "Debug" ] || exit 0
+
 PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
 # Restrict to the git-describe character set so the value can't alter the
 # PlistBuddy command string below (defense-in-depth: the expansion is already

@@ -1,29 +1,28 @@
 import Testing
 @testable import WorldCupBar
 
-@Test func footerShowsGitDescribeBetweenTags() {
-    let version = AppVersion(describe: "v1.1.1-5-g5450215", dirty: false)
-    #expect(version.footer == "v1.1.1-5-g5450215")
+@Test func releaseFooterShowsMarketingVersion() {
+    #expect(AppVersion.releaseFooter(marketingVersion: "1.1.2") == "v1.1.2")
 }
 
-@Test func footerIsCleanTagAtRelease() {
-    let version = AppVersion(describe: "v1.1.1", dirty: false)
-    #expect(version.footer == "v1.1.1")
+@Test func devFooterShowsGitDescribe() {
+    #expect(AppVersion.devFooter(describe: "v1.1.1-5-g5450215", dirty: false) == "v1.1.1-5-g5450215")
 }
 
-@Test func footerAppendsDirtyMarker() {
-    let version = AppVersion(describe: "v1.1.1-5-g5450215", dirty: true)
-    #expect(version.footer == "v1.1.1-5-g5450215-dirty")
+@Test func devFooterShowsCleanTag() {
+    #expect(AppVersion.devFooter(describe: "v1.1.1", dirty: false) == "v1.1.1")
 }
 
-@Test func footerIsUnknownWhenNoGit() {
-    let version = AppVersion(describe: "unknown", dirty: false)
-    #expect(version.footer == "unknown")
+@Test func devFooterAppendsDirtyMarker() {
+    #expect(AppVersion.devFooter(describe: "v1.1.1-5-g5450215", dirty: true) == "v1.1.1-5-g5450215-dirty")
 }
 
-/// Smoke test for the resolution path (bundle stamp → DEBUG runtime fallback).
-/// Running inside the repo it yields a `git describe`; with no git it yields
-/// `unknown`. Either way it must resolve to a non-empty string without crashing.
-@Test func currentResolvesToNonEmptyDescribe() {
-    #expect(!AppVersion.current().describe.isEmpty)
+@Test func devFooterIsUnknownWhenNoGit() {
+    #expect(AppVersion.devFooter(describe: "unknown", dirty: false) == "unknown")
+}
+
+/// Smoke test: resolution must yield a non-empty string without crashing
+/// (Debug → git describe or "unknown"; Release → "v" + marketing version).
+@Test func footerResolvesToNonEmpty() {
+    #expect(!AppVersion.footer().isEmpty)
 }

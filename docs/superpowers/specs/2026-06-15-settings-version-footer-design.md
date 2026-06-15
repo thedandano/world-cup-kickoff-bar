@@ -5,84 +5,70 @@
 
 ## Goal
 
-Show the app version at the bottom-left of the Settings sidebar, derived from `git describe --tags` (e.g. `v1.1.1-5-g5450215`) so it always reflects the real git state rather than a hardcoded build setting. A `-dirty` marker flags uncommitted build-input changes. At a release tag the string collapses to just the tag (e.g. `v1.1.1`).
+Show the app version at the bottom-left of the Settings sidebar:
+- **Release / prod builds** show the marketing version from the release tag (e.g. `v1.1.2`).
+- **Local Debug builds** show `git describe` (e.g. `v1.1.1-8-g1441af7`, `-dirty` when build inputs are uncommitted) for precise build identification.
 
-> **Revision note:** an earlier draft showed `v{MARKETING_VERSION} (build {CFBundleVersion})` gated by `#if DEBUG`. That was changed because `MARKETING_VERSION` is a hardcoded build setting that had gone stale (`1.0.0` while the latest tag was `v1.1.1`), and running the SwiftPM dev binary showed the empty-bundle fallback (`0.0.0`). `git describe` fixes both: it derives the version from tags and self-cleans at release commits.
+## Why two sources (the prod-safety reason)
+
+`git describe` is great locally but **unreliable in CI**: the release workflow checks out with `actions/checkout@v4` defaults (shallow, no tags), so `git describe --tags` can't find the tag and would fall back to a bare SHA. Meanwhile the release workflow **already injects the correct version** at archive time:
+
+```
+xcodebuild archive -configuration Release \
+  MARKETING_VERSION="${GIT_TAG#v}" CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" ...
+```
+
+So prod's `CFBundleShortVersionString` is the real tag version with no git dependency. The footer reads that in Release and keeps `git describe` only for Debug. The split is gated by `#if DEBUG`.
 
 ## Behavior
 
-The footer is muted caption text pinned at the bottom of the Settings sidebar, visible regardless of which panel is selected.
-
-| Situation | Footer text |
-|-----------|-------------|
-| Local build, N commits past the tag | `v1.1.1-5-g5450215` |
-| Exactly at a release tag (CI release) | `v1.1.1` |
-| Build inputs dirty | `v1.1.1-5-g5450215-dirty` |
-| No git available (e.g. source tarball) | `unknown` |
-
-Because `git describe` already returns just `v1.1.1` at a tagged commit and the `-N-gSHA` detail only between tags, no `#if DEBUG` format gate is needed — release builds are clean automatically.
+| Build | Footer |
+|-------|--------|
+| Release / CI (tag `v1.1.2`) | `v1.1.2` |
+| Local Debug, N commits past tag | `v1.1.1-8-g1441af7` |
+| Local Debug, build inputs dirty | `v1.1.1-8-g1441af7-dirty` |
+| Local Debug, no git available | `unknown` |
 
 ### Definition of "dirty"
 
-"Dirty" means **uncommitted changes that can influence the built app** — staged, unstaged, or untracked changes under the build inputs `Sources/` and `project.yml`. Docs (`README.md`, `docs/`, `CLAUDE.md`) and gitignored artifacts (`.build/`, `dist/`, `*.xcodeproj`) don't count. Implementation: `git status --porcelain -- Sources project.yml` non-empty.
+Uncommitted changes to build inputs `Sources/` and `project.yml` (`git status --porcelain -- Sources project.yml` non-empty). Docs and gitignored artifacts (`.build/`, `dist/`, `*.xcodeproj`) don't count.
 
 ## Architecture
 
-### 1. Build-time git injection
+`AppVersion` (caseless enum namespace, app target). The view calls `AppVersion.footer()`.
 
-The sandboxed app can't run `git` at runtime, so the value is injected at build time into the **built product's** Info.plist (not the source plist — keeps the source tree clean so it doesn't self-dirty).
+### Release path
 
-A Run Script build phase on the `WorldCupBar` target (`scripts/stamp-git-info.sh`, wired via XcodeGen `postBuildScripts`) writes two keys:
-- `GitDescribe` (String) = `git describe --tags --always --abbrev=7`, or `unknown` with no git.
-- `GitDirty` (Bool) = the scoped dirty check above.
+`footer()` (`#else`) returns `"v" + CFBundleShortVersionString`. No git, no `Process` — the `git`/runtime helpers live inside `#if DEBUG` and aren't compiled into the shipped binary.
 
-It runs after Info.plist processing and before code signing, guards on a missing plist, and never fails the build.
+### Debug path
 
-### 2. `AppVersion` (app target)
+`footer()` (`#if DEBUG`) resolves `git describe` + dirty via:
+1. **Info.plist stamp** — `scripts/stamp-git-info.sh` (XcodeGen `postBuildScripts`) writes `GitDescribe`/`GitDirty`, **only when `CONFIGURATION == Debug`** (release builds skip it, keeping the prod Info.plist clean). Used by the sandboxed local `.app`, which can't exec git.
+2. **Runtime `git describe`** — for the non-sandboxed dev binary (`swift run`). Anchors on the working directory first (the repo root when launched from it), then `#filePath`.
+3. Falls back to `"unknown"`.
 
-```swift
-struct AppVersion {
-    let describe: String   // "v1.1.1-5-g5450215", "v1.1.1", or "unknown"
-    let dirty: Bool
-    var footer: String { dirty ? "\(describe)-dirty" : describe }
-    static func current(bundle: Bundle = .main) -> AppVersion
-}
-```
+### Pure formatters (unit-tested)
 
-`current()` resolution order:
-1. **Bundle stamp** — `GitDescribe`/`GitDirty` from Info.plist. Always present in the real (Xcode-built) app, Debug or Release.
-2. **DEBUG-only runtime fallback** — when the stamp is absent (e.g. the SwiftPM dev binary run via `swift run`, which has no processed Info.plist), read `git describe` at runtime, locating the checkout from `#filePath`. Only reachable by the non-sandboxed dev binary; the sandboxed app can't exec git, so it never needs this path. Compiled out of Release entirely (`#if DEBUG`).
-3. Otherwise `unknown`.
-
-### 3. Footer view
-
-`SettingsView` wraps the sidebar `List` in a `VStack(spacing: 0)` with a `versionFooter` (`Divider` + `Text(AppVersion.current().footer)`), styled via `WorldCupBarTheme` tokens (`WCBFont.caption`, `WCBColor.secondaryLabel`, `WCBSpacing.medium/small`).
-
-## Data Flow
-
-```
-build phase (git describe) ─→ product Info.plist {GitDescribe, GitDirty}
-                                     └─→ AppVersion.current() ─→ .footer ─→ sidebar Text
-dev binary (no stamp) ── #if DEBUG runtime `git describe` ──────┘
-```
+- `releaseFooter(marketingVersion:) -> String` → `"v\(marketingVersion)"`
+- `devFooter(describe:dirty:) -> String` → `describe` + `-dirty` when dirty
 
 ## Testing
 
-- Unit tests (`Tests/WorldCupBarTests/AppVersionTests.swift`) for `AppVersion.footer`: between-tags, clean-tag, dirty, unknown.
-- A resolution smoke test: `AppVersion.current().describe` is non-empty (exercises the bundle→runtime→unknown path without crashing).
-- Manual: build & run; confirm the sidebar footer. The Xcode `.app` shows the stamped value; the dev binary shows the runtime value.
+- Unit tests (`Tests/WorldCupBarTests/AppVersionTests.swift`): `releaseFooter`, `devFooter` (describe / clean-tag / dirty / unknown), and a `footer()` resolution smoke test.
+- Manual: Debug `.app` and dev binary show `git describe`; a Release build with an injected `MARKETING_VERSION` shows `v{version}` and carries no `GitDescribe` key.
 
 ## Files
 
 | File | Change |
 |------|--------|
-| `scripts/stamp-git-info.sh` | Stamps `GitDescribe`/`GitDirty` into the product Info.plist |
-| `project.yml` | `postBuildScripts` Run Script phase on `WorldCupBar` |
-| `Sources/WorldCupBar/App/AppVersion.swift` | `AppVersion` reader + footer + DEBUG runtime fallback |
-| `Sources/WorldCupBar/Settings/SettingsView.swift` | Sidebar `VStack` + version footer |
-| `Tests/WorldCupBarTests/AppVersionTests.swift` | Footer + resolution tests |
+| `Sources/WorldCupBar/App/AppVersion.swift` | Hybrid resolver + pure formatters; DEBUG-only git helpers |
+| `Sources/WorldCupBar/Settings/SettingsView.swift` | Sidebar `VStack` + `AppVersion.footer()` |
+| `scripts/stamp-git-info.sh` | Stamps `GitDescribe`/`GitDirty` (Debug only) |
+| `project.yml` | `postBuildScripts` Run Script phase |
+| `Tests/WorldCupBarTests/AppVersionTests.swift` | Formatter + smoke tests |
 
 ## Non-Goals (YAGNI)
 
+- No build/run number in the release footer — just the marketing version. (Easy to add `(build N)` from `CFBundleVersion` if wanted.)
 - No "click to copy", no About window.
-- No separate `(build N)` — `git describe`'s commit-count is more meaningful than `CFBundleVersion` locally.
