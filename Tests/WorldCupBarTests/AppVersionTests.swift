@@ -1,30 +1,29 @@
 import Testing
 @testable import WorldCupBar
 
-@Test func footerReleaseHidesGitDetail() {
-    let text = AppVersion.footerText(
-        version: "1.1.1", build: "42", sha: "90ed77e", dirty: true, isDebug: false
-    )
-    #expect(text == "v1.1.1 (build 42)")
+@Test func footerShowsGitDescribeBetweenTags() {
+    let version = AppVersion(describe: "v1.1.1-5-g5450215", dirty: false)
+    #expect(version.footer == "v1.1.1-5-g5450215")
 }
 
-@Test func footerDebugCleanShowsSha() {
-    let text = AppVersion.footerText(
-        version: "1.1.1", build: "1", sha: "90ed77e", dirty: false, isDebug: true
-    )
-    #expect(text == "v1.1.1 (build 1) · 90ed77e")
+@Test func footerIsCleanTagAtRelease() {
+    let version = AppVersion(describe: "v1.1.1", dirty: false)
+    #expect(version.footer == "v1.1.1")
 }
 
-@Test func footerDebugDirtyAppendsDirty() {
-    let text = AppVersion.footerText(
-        version: "1.1.1", build: "1", sha: "90ed77e", dirty: true, isDebug: true
-    )
-    #expect(text == "v1.1.1 (build 1) · 90ed77e-dirty")
+@Test func footerAppendsDirtyMarker() {
+    let version = AppVersion(describe: "v1.1.1-5-g5450215", dirty: true)
+    #expect(version.footer == "v1.1.1-5-g5450215-dirty")
 }
 
-@Test func footerDebugUnknownShaWhenNoGit() {
-    let text = AppVersion.footerText(
-        version: "1.1.1", build: "1", sha: "unknown", dirty: false, isDebug: true
-    )
-    #expect(text == "v1.1.1 (build 1) · unknown")
+@Test func footerIsUnknownWhenNoGit() {
+    let version = AppVersion(describe: "unknown", dirty: false)
+    #expect(version.footer == "unknown")
+}
+
+/// Smoke test for the resolution path (bundle stamp → DEBUG runtime fallback).
+/// Running inside the repo it yields a `git describe`; with no git it yields
+/// `unknown`. Either way it must resolve to a non-empty string without crashing.
+@Test func currentResolvesToNonEmptyDescribe() {
+    #expect(!AppVersion.current().describe.isEmpty)
 }
