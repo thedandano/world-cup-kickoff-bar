@@ -1,22 +1,40 @@
-name: CD — Build & Release
+name: Release Please
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  release:
-    name: Build, Sign, Notarize, Release (DMG)
+  # 1. Maintain a release PR from conventional commits; cut a release when merged.
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # 2. When a release is cut, build + sign + notarize the DMG and attach it.
+  build:
+    name: Build, Sign, Notarize & Attach DMG
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: macos-15
     env:
-      GIT_TAG: ${{ github.ref_name }}
-
+      GIT_TAG: ${{ needs.release-please.outputs.tag_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # The .xcodeproj is generated from project.yml (not committed), so build it here.
       - name: Generate Xcode project
         run: |
           brew install xcodegen
@@ -33,7 +51,6 @@ jobs:
             -destination 'platform=macOS' \
             CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO
 
-      # ── Import the Developer ID Application cert into a temp keychain ─────
       - name: Import signing certificate
         env:
           DEVELOPER_ID_CERT_BASE64: ${{ secrets.DEVELOPER_ID_CERT_BASE64 }}
@@ -48,10 +65,8 @@ jobs:
           security import "$RUNNER_TEMP/cert.p12" \
             -P "$DEVELOPER_ID_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
-          # Allow codesign to use the key non-interactively
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      # ── Archive (Release, Developer ID) — Xcode embeds Sparkle + the icon ─
       - name: Archive
         env:
           DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
@@ -69,7 +84,6 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist ExportOptions.plist
 
-      # ── Notarize + staple the app (trusted offline once dragged out) ─────
       - name: Notarize & staple app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -85,7 +99,6 @@ jobs:
       - name: Package DMG
         run: ./scripts/make-dmg.sh "$RUNNER_TEMP/export/WorldCupBar.app" dist
 
-      # ── Sign, notarize & staple the DMG ──────────────────────────────────
       - name: Sign, notarize & staple DMG
         env:
           DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
@@ -99,18 +112,15 @@ jobs:
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
           xcrun stapler staple "$DMG"
 
-      # ── Sign the Sparkle appcast and publish the Release ─────────────────
       - name: Generate Sparkle appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           REPO: ${{ github.repository }}
+          SPARKLE_TOOLS_VERSION: "2.9.3"
         run: |
           echo -n "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_key"
-          SPARKLE_VERSION=$(python3 -c \
-            "import json; pins=json.load(open('Package.resolved'))['pins']; \
-            print(next(p['state']['version'] for p in pins if 'sparkle' in p['location'].lower()))")
           curl -Lso "$RUNNER_TEMP/sparkle.tar.xz" \
-            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
+            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_TOOLS_VERSION}/Sparkle-${SPARKLE_TOOLS_VERSION}.tar.xz"
           mkdir -p "$RUNNER_TEMP/sparkle"
           tar -xJf "$RUNNER_TEMP/sparkle.tar.xz" -C "$RUNNER_TEMP/sparkle"
           "$RUNNER_TEMP/sparkle/bin/generate_appcast" \
@@ -120,10 +130,7 @@ jobs:
             dist/
           cp dist/appcast.xml appcast.xml
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/WorldCupBar-*.dmg
-            appcast.xml
-          generate_release_notes: true
+      - name: Attach DMG + appcast to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GIT_TAG" dist/WorldCupBar-*.dmg appcast.xml --clobber
