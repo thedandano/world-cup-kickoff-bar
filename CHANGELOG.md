@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.1.0...v1.1.1) (2026-06-15)
+
+
+### Miscellaneous Chores
+
+* release 1.1.1 ([954fd81](https://github.com/thedandano/world-cup-kickoff-bar/commit/954fd81d08417201026ec65a70dbe6df9f572fa7))
+
 ## [1.1.0](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.0.0...v1.1.0) (2026-06-15)
 
 
