@@ -61,6 +61,23 @@ Done! It'll start with your Mac from now on.
 
 ---
 
+## Troubleshooting
+
+### "An error occurred while launching the installer" when updating
+
+Versions **1.2.0** and **1.3.0** shipped with a sandbox setting that blocks the in-app updater, so those versions cannot auto-update themselves to **1.3.1**. If you see this error, update manually one time:
+
+1. Quit World Cup Bar (click its menu bar status, then **Quit**).
+2. **[⬇ Download the latest release](https://github.com/thedandano/world-cup-kickoff-bar/releases/latest/download/WorldCupBar.dmg)** and open the DMG.
+3. Drag **World Cup Bar** onto the Applications shortcut, replacing the old copy.
+4. Launch it again.
+
+From **1.3.1** onward, automatic updates work normally, so this is a one time step.
+
+> After this update you may need to re-pick your followed teams. The older sandboxed builds stored settings in a separate location, so your previous selection will not carry over.
+
+---
+
 ## Make it yours
 
 Click the status and open **Settings** to:
