@@ -9,6 +9,9 @@
   ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0+-blue?style=flat-square&logo=swift)
   ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
   ![Platform](https://img.shields.io/badge/platform-macOS-purple?style=flat-square)
+  ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=thedandano.world-cup-kickoff-bar&style=flat-square)
+
+  ### [⬇ Download for macOS](https://github.com/thedandano/world-cup-kickoff-bar/releases/latest/download/WorldCupBar.dmg)
 
   <a href="https://www.buymeacoffee.com/CagXd3ZFyZ"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=CagXd3ZFyZ&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 
@@ -17,6 +20,8 @@
 </div>
 
 ---
+
+![World Cup Bar hero banner](assets/readme/hero-banner.png)
 
 ## What is it?
 
@@ -40,9 +45,9 @@ No browser tab. No Dock clutter. Just a tiny status that's always there when you
 
 **Requires macOS 14 (Sonoma) or later.**
 
-1. Download the latest **`WorldCupBar-x.y.z.dmg`** from the [Releases page](https://github.com/thedandano/world-cup-kickoff-bar/releases).
+1. **[⬇ Download the latest release](https://github.com/thedandano/world-cup-kickoff-bar/releases/latest/download/WorldCupBar.dmg)** (or browse [all releases](https://github.com/thedandano/world-cup-kickoff-bar/releases) for older versions and release notes).
 2. Open the DMG and **drag World Cup Bar onto the Applications shortcut**.
-3. Launch it a status appears in your menu bar. Click it for scores and fixtures.
+3. Launch it. A status appears in your menu bar. Click it for scores and fixtures.
 
 The app is signed and **notarized by Apple**, so it opens with no scary warnings, and it **updates itself** automatically when new versions ship.
 
@@ -64,11 +69,13 @@ Click the status and open **Settings** to:
 - **Menu bar style** — show team codes (USA) or flag emoji (🇺🇸)
 - **Kickoff alerts** — choose your lead time, or turn them off
 
+![World Cup Bar settings screenshot](assets/readme/following-settings.png)
+
 ---
 
 ## Privacy
 
-No personal data is collected, and there are **no analytics or third-party tracking SDKs** nothing leaves your device. Your followed teams, preferences, and cached scores are stored locally. Match data comes from <a href=https://worldcup26.ir target="_blank" rel="noopener noreferrer"> worldcup26.ir </a>.
+No personal data is collected, and there are **no analytics or third-party tracking SDKs**. Nothing leaves your device. Your followed teams, preferences, and cached scores are stored locally. Match data comes from <a href=https://worldcup26.ir target="_blank" rel="noopener noreferrer"> worldcup26.ir </a>.
 
 ---
 
@@ -91,7 +98,7 @@ Strict MVVM with a `WorldCupBarCore` (pure logic) / `WorldCupBar` (SwiftUI) spli
 
 ## License
 
-MIT see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 **No warranty.** This software is provided as-is; the authors aren't responsible for any issues arising from its use.
 

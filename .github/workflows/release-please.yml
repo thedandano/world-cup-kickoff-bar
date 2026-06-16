@@ -160,4 +160,6 @@ jobs:
       - name: Attach DMG + appcast to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$GIT_TAG" dist/WorldCupBar-*.dmg appcast.xml --clobber
+        run: |
+          cp dist/WorldCupBar-*.dmg dist/WorldCupBar.dmg
+          gh release upload "$GIT_TAG" dist/WorldCupBar-*.dmg dist/WorldCupBar.dmg appcast.xml --clobber
