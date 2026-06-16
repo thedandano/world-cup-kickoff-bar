@@ -16,3 +16,4 @@ DerivedData/
 
 # Generated at release time from the APPLE_TEAM_ID secret
 /ExportOptions.plist
+docs/superpowers

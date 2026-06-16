@@ -138,10 +138,18 @@ private struct FollowingPanel: View {
     @State private var search = ""
 
     private var filtered: [Country] {
-        guard !search.isEmpty else { return viewModel.availableCountries }
-        return viewModel.availableCountries.filter {
-            $0.name.localizedCaseInsensitiveContains(search)
-                || $0.code.localizedCaseInsensitiveContains(search)
+        let matches = search.isEmpty
+            ? viewModel.availableCountries
+            : viewModel.availableCountries.filter {
+                $0.name.localizedCaseInsensitiveContains(search)
+                    || $0.code.localizedCaseInsensitiveContains(search)
+            }
+        // Followed teams float to the top, alphabetical within each group.
+        return matches.sorted { lhs, rhs in
+            let lhsFollowed = viewModel.followedCountryCodes.contains(lhs.code)
+            let rhsFollowed = viewModel.followedCountryCodes.contains(rhs.code)
+            if lhsFollowed != rhsFollowed { return lhsFollowed }
+            return lhs.name < rhs.name
         }
     }
 
