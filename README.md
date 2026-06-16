@@ -13,7 +13,7 @@
 
   ### [⬇ Download for macOS](https://github.com/thedandano/world-cup-kickoff-bar/releases/latest/download/WorldCupBar.dmg)
 
-  <a href="https://www.buymeacoffee.com/CagXd3ZFyZ"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=CagXd3ZFyZ&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
+  <a href="https://www.buymeacoffee.com/CagXd3ZFyZ" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
   Live scores · Upcoming fixtures · Kickoff alerts all from your menu bar. No browser required.
 
