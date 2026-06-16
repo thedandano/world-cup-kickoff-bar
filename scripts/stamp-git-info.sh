@@ -1,37 +1,30 @@
 #!/bin/sh
-# Stamps `git describe` output and a "dirty" flag into the built app's Info.plist
-# so the Settings footer can show the version (e.g. v1.1.1-5-g5450215). Runs as a
-# post-build phase (after Info.plist processing, before code signing). Never
-# fails the build.
+# Writes a DisplayVersion key into the built Debug app's Info.plist set to
+# `git describe`, so the Settings footer shows the exact local build. Release
+# builds skip this — the footer then falls back to CFBundleShortVersionString
+# (the marketing version CI injects from the tag). Never fails the build.
 set -u
 
-# Only the local Debug build needs git detail in the footer; release builds show
-# the marketing version (CFBundleShortVersionString) that CI injects from the tag.
+# Only the local Debug build needs git detail; release builds show the marketing
+# version (CFBundleShortVersionString).
 [ "${CONFIGURATION:-}" = "Debug" ] || exit 0
 
 PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
-# Restrict to the git-describe character set so the value can't alter the
-# PlistBuddy command string below (defense-in-depth: the expansion is already
-# double-quoted and git refnames can't contain shell metacharacters).
-DESCRIBE="$(git -C "${SRCROOT}" describe --tags --always --abbrev=7 2>/dev/null | tr -cd 'A-Za-z0-9._+/-')"
-[ -n "${DESCRIBE}" ] || DESCRIBE="unknown"
+[ -f "${PLIST}" ] || { echo "warning: Info.plist not found at ${PLIST}; skipping"; exit 0; }
 
-# "dirty" = uncommitted changes to build inputs (Sources, project.yml).
+# Restrict to the git-describe character set so the value can't alter the
+# PlistBuddy command string below; strip the leading "v" (the footer re-adds it).
+DESCRIBE="$(git -C "${SRCROOT}" describe --tags --always --abbrev=7 2>/dev/null | tr -cd 'A-Za-z0-9._+/-')"
+DESCRIBE="${DESCRIBE#v}"
+[ -n "${DESCRIBE}" ] || exit 0
+
+# Append -dirty for uncommitted changes to build inputs (Sources, project.yml).
 # Untracked docs and gitignored artifacts (.build, dist, *.xcodeproj) don't count.
 if [ -n "$(git -C "${SRCROOT}" status --porcelain -- Sources project.yml 2>/dev/null)" ]; then
-  DIRTY=true
-else
-  DIRTY=false
+  DESCRIBE="${DESCRIBE}-dirty"
 fi
 
-if [ ! -f "${PLIST}" ]; then
-  echo "warning: Info.plist not found at ${PLIST}; skipping git stamp"
-  exit 0
-fi
+/usr/libexec/PlistBuddy -c "Add :DisplayVersion string ${DESCRIBE}" "${PLIST}" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Set :DisplayVersion ${DESCRIBE}" "${PLIST}" 2>/dev/null || true
 
-/usr/libexec/PlistBuddy -c "Add :GitDescribe string ${DESCRIBE}" "${PLIST}" 2>/dev/null \
-  || /usr/libexec/PlistBuddy -c "Set :GitDescribe ${DESCRIBE}" "${PLIST}" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :GitDirty bool ${DIRTY}" "${PLIST}" 2>/dev/null \
-  || /usr/libexec/PlistBuddy -c "Set :GitDirty ${DIRTY}" "${PLIST}" 2>/dev/null || true
-
-echo "Stamped GitDescribe=${DESCRIBE} GitDirty=${DIRTY} into ${PLIST}"
+echo "Set DisplayVersion=${DESCRIBE} in ${PLIST}"

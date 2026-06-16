@@ -1,28 +1,27 @@
 import Testing
 @testable import WorldCupBar
 
-@Test func releaseFooterShowsMarketingVersion() {
-    #expect(AppVersion.releaseFooter(marketingVersion: "1.1.2") == "v1.1.2")
+@Test func footerPrefersStampedGitDescribe() {
+    let text = AppVersion.footer(displayVersion: "1.1.1-9-g6b3d93c", marketingVersion: "1.0.0")
+    #expect(text == "v1.1.1-9-g6b3d93c")
 }
 
-@Test func devFooterShowsGitDescribe() {
-    #expect(AppVersion.devFooter(describe: "v1.1.1-5-g5450215", dirty: false) == "v1.1.1-5-g5450215")
+@Test func footerKeepsDirtyMarker() {
+    let text = AppVersion.footer(displayVersion: "1.1.1-9-g6b3d93c-dirty", marketingVersion: nil)
+    #expect(text == "v1.1.1-9-g6b3d93c-dirty")
 }
 
-@Test func devFooterShowsCleanTag() {
-    #expect(AppVersion.devFooter(describe: "v1.1.1", dirty: false) == "v1.1.1")
+@Test func footerFallsBackToMarketingVersion() {
+    let text = AppVersion.footer(displayVersion: nil, marketingVersion: "1.1.2")
+    #expect(text == "v1.1.2")
 }
 
-@Test func devFooterAppendsDirtyMarker() {
-    #expect(AppVersion.devFooter(describe: "v1.1.1-5-g5450215", dirty: true) == "v1.1.1-5-g5450215-dirty")
+@Test func footerShowsDevPlaceholderWhenNothingAvailable() {
+    let text = AppVersion.footer(displayVersion: nil, marketingVersion: nil)
+    #expect(text == "dev build")
 }
 
-@Test func devFooterIsUnknownWhenNoGit() {
-    #expect(AppVersion.devFooter(describe: "unknown", dirty: false) == "unknown")
-}
-
-/// Smoke test: resolution must yield a non-empty string without crashing
-/// (Debug → git describe or "unknown"; Release → "v" + marketing version).
-@Test func footerResolvesToNonEmpty() {
-    #expect(!AppVersion.footer().isEmpty)
+@Test func footerIgnoresEmptyAndZeroVersions() {
+    let text = AppVersion.footer(displayVersion: "", marketingVersion: "0.0.0")
+    #expect(text == "dev build")
 }
