@@ -40,6 +40,7 @@ final class WorldCupBarViewModel {
     private(set) var availableCountries: [Country] = []
     private let repository: any WorldCupDataProviding
     private let selectionService = MatchSelectionService()
+    private let pollingPolicy = PollingIntervalPolicy()
     private let formatter = MatchFormatter()
     private let notificationScheduler: any NotificationScheduling
     private let defaults: UserDefaults
@@ -261,12 +262,7 @@ final class WorldCupBarViewModel {
     }
 
     private var nextPollingInterval: Duration {
-        switch contentState {
-        case .content(.live):
-            return .seconds(30)
-        case .loading, .unavailable, .postTournament, .content:
-            return .seconds(300)
-        }
+        pollingPolicy.interval(for: matches, now: Date())
     }
 }
 
