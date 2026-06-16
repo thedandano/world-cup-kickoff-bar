@@ -9,6 +9,7 @@
   ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0+-blue?style=flat-square&logo=swift)
   ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
   ![Platform](https://img.shields.io/badge/platform-macOS-purple?style=flat-square)
+  ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=thedandano.world-cup-kickoff-bar&style=flat-square)
 
   ### [⬇ Download for macOS](https://github.com/thedandano/world-cup-kickoff-bar/releases/latest/download/WorldCupBar.dmg)
 
