@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.2.0...v1.3.0) (2026-06-16)
+
+
+### Features
+
+* **polling:** adaptive API polling cadence ([#7](https://github.com/thedandano/world-cup-kickoff-bar/issues/7)) ([a5b463a](https://github.com/thedandano/world-cup-kickoff-bar/commit/a5b463ab50d7eb642977e4ce2c54c2a36e066ce2))
+
 ## [1.2.0](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.1.1...v1.2.0) (2026-06-16)
 
 
