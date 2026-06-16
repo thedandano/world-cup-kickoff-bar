@@ -21,7 +21,7 @@
 
 ---
 
-![World Cup Bar dropdown screenshot](assets/readme/menu-dropdown.png)
+![World Cup Bar hero banner](assets/readme/hero-banner.png)
 
 ## What is it?
 
