@@ -4,7 +4,7 @@
 #
 # Usage:   ./scripts/make-dmg.sh <path-to-.app> [output-dir]
 # Example: ./scripts/make-dmg.sh build/export/WorldCupBar.app dist
-# Output:  <output-dir>/<AppName>-<version>.dmg
+# Output:  <output-dir>/<AppName>.dmg
 #
 # Icon layout is best-effort (needs a Finder/GUI session); the DMG is valid
 # either way — it always shows the app next to an Applications shortcut.
@@ -18,10 +18,9 @@ OUT_DIR="${2:-dist}"
 PLIST="$APP/Contents/Info.plist"
 NAME="$(basename "$APP" .app)"
 VOL_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$PLIST" 2>/dev/null || echo "$NAME")"
-VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
 
 mkdir -p "$OUT_DIR"
-DMG="${OUT_DIR}/${NAME}-${VERSION}.dmg"
+DMG="${OUT_DIR}/${NAME}.dmg"
 RW_DMG="$(mktemp -u).dmg"
 MOUNT_DIR="/Volumes/${VOL_NAME}"
 hdiutil detach "$MOUNT_DIR" -quiet 2>/dev/null || true

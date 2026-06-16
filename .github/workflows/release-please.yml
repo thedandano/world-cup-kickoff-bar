@@ -133,7 +133,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: |
-          DMG="dist/WorldCupBar-${GIT_TAG#v}.dmg"
+          DMG="dist/WorldCupBar.dmg"
           codesign --force --sign "Developer ID Application" --timestamp "$DMG"
           xcrun notarytool submit "$DMG" \
             --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
@@ -161,5 +161,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cp dist/WorldCupBar-*.dmg dist/WorldCupBar.dmg
-          gh release upload "$GIT_TAG" dist/WorldCupBar-*.dmg dist/WorldCupBar.dmg appcast.xml --clobber
+          gh release upload "$GIT_TAG" dist/WorldCupBar.dmg appcast.xml --clobber
