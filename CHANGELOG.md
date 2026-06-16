@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.3.0...v1.3.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* **updates:** remove app sandbox so Sparkle installer can launch ([#9](https://github.com/thedandano/world-cup-kickoff-bar/issues/9)) ([15c9471](https://github.com/thedandano/world-cup-kickoff-bar/commit/15c947148b0f21b1f41e501a466eb5059ad5a45b))
+
 ## [1.3.0](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.2.0...v1.3.0) (2026-06-16)
 
 
