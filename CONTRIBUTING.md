@@ -50,4 +50,4 @@ Follow the patterns already in the codebase. The `CLAUDE.md` file documents the 
 
 ---
 
-If this project saved you a trip to a browser during a match, consider [buying me a coffee](https://www.buymeacoffee.com/thedandano). Totally optional, always appreciated.
+If this project saved you a trip to a browser during a match, consider [buying me a coffee](https://buymeacoffee.com/cagxd3zfyz). Totally optional, always appreciated.
