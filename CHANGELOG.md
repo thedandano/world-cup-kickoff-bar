@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.1.1...v1.2.0) (2026-06-16)
+
+
+### Features
+
+* added auto sort for followed teams in settings ([99c3583](https://github.com/thedandano/world-cup-kickoff-bar/commit/99c3583bf2bca6338b62a9e3462ca6a023ffee64))
+* **app-icon:** replace placeholder with trophy-first artwork ([fcbd313](https://github.com/thedandano/world-cup-kickoff-bar/commit/fcbd3136cb7673c62be9afa032335b98ef762000))
+
 ## [1.1.1](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.1.0...v1.1.1) (2026-06-15)
 
 
