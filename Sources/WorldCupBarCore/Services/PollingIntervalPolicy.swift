@@ -27,16 +27,15 @@ public struct PollingIntervalPolicy: Sendable {
             .min()
 
         guard let nextKickoff else {
-            return .seconds(config.idleCap)
+            return config.idleCap
         }
 
-        let timeUntilKickoff = nextKickoff.timeIntervalSince(now)
+        let timeUntilKickoff = Duration.seconds(nextKickoff.timeIntervalSince(now))
         if timeUntilKickoff <= config.warmupWindow {
             return config.imminentInterval
         }
 
         let untilWarmup = timeUntilKickoff - config.warmupWindow
-        let idleSeconds = max(60, min(untilWarmup, config.idleCap))
-        return .seconds(idleSeconds)
+        return max(.seconds(60), min(untilWarmup, config.idleCap))
     }
 }

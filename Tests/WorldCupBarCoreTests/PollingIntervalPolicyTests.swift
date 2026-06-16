@@ -20,6 +20,11 @@ private func match(
     )
 }
 
+@Test func liveWithUnknownMinuteStillPolls30Seconds() {
+    let matches = [match(id: "live-nil", kickoffOffset: -600, status: .live(minute: nil))]
+    #expect(PollingIntervalPolicy().interval(for: matches, now: now) == .seconds(30))
+}
+
 @Test func liveMatchPollsEvery30Seconds() {
     let matches = [
         match(id: "live", kickoffOffset: -3_600, status: .live(minute: 50)),
@@ -92,8 +97,8 @@ private func match(
     let config = PollingConfiguration(
         liveInterval: .seconds(15),
         imminentInterval: .seconds(45),
-        warmupWindow: 5 * 60,
-        idleCap: 6 * 60 * 60
+        warmupWindow: .seconds(5 * 60),
+        idleCap: .seconds(6 * 60 * 60)
     )
     let policy = PollingIntervalPolicy(configuration: config)
     let live = [match(id: "live", kickoffOffset: -600, status: .live(minute: 10))]
