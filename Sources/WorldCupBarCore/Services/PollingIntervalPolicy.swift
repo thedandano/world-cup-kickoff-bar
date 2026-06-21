@@ -21,6 +21,20 @@ public struct PollingIntervalPolicy: Sendable {
             return config.liveInterval
         }
 
+        // A match still flagged .scheduled whose kickoff time has passed is
+        // presumably underway -- the API lags flipping it to .live. Poll
+        // aggressively instead of backing off to the idle cap, bounded by the
+        // grace window so a stuck scheduled match cannot pin us at liveInterval.
+        let justKickedOff = matches.contains { match in
+            guard match.status == .scheduled, match.kickoffDate <= now else {
+                return false
+            }
+            return Duration.seconds(now.timeIntervalSince(match.kickoffDate)) <= config.kickoffGraceWindow
+        }
+        if justKickedOff {
+            return config.liveInterval
+        }
+
         let nextKickoff = matches
             .filter { $0.status == .scheduled && $0.kickoffDate >= now }
             .map(\.kickoffDate)
