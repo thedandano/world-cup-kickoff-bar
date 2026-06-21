@@ -76,11 +76,25 @@ private func match(
     #expect(PollingIntervalPolicy().interval(for: matches, now: now) == .seconds(60))
 }
 
-@Test func pastScheduledKickoffsAreIgnored() {
+@Test func recentlyPastScheduledKickoffPollsLive() {
+    // Kickoff time passed but the API hasn't flipped to .live yet: treat it as
+    // underway and poll at liveInterval instead of backing off to the idle cap.
     let matches = [
-        match(id: "past", kickoffOffset: -600, status: .scheduled),
+        match(id: "justkicked", kickoffOffset: -60, status: .scheduled),
         match(id: "future", kickoffOffset: 5 * 60 * 60, status: .scheduled)
     ]
+    #expect(PollingIntervalPolicy().interval(for: matches, now: now) == .seconds(30))
+}
+
+@Test func scheduledKickoffJustInsideGraceWindowPollsLive() {
+    // Within the 3h grace window (default kickoffGraceWindow).
+    let matches = [match(id: "stillon", kickoffOffset: -(3 * 60 * 60 - 60), status: .scheduled)]
+    #expect(PollingIntervalPolicy().interval(for: matches, now: now) == .seconds(30))
+}
+
+@Test func scheduledKickoffBeyondGraceWindowCapsAtThreeHours() {
+    // Past the grace window: a stuck scheduled match must not pin us at liveInterval.
+    let matches = [match(id: "stale", kickoffOffset: -(4 * 60 * 60), status: .scheduled)]
     #expect(PollingIntervalPolicy().interval(for: matches, now: now) == .seconds(3 * 60 * 60))
 }
 
