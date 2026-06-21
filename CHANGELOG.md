@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.3.1...v1.3.2) (2026-06-21)
+
+
+### Bug Fixes
+
+* **polling:** poll live when a scheduled kickoff time has passed ([97391a4](https://github.com/thedandano/world-cup-kickoff-bar/commit/97391a47e8f2597c189d3d84ead4411386d541a0))
+
 ## [1.3.1](https://github.com/thedandano/world-cup-kickoff-bar/compare/v1.3.0...v1.3.1) (2026-06-16)
 
 
